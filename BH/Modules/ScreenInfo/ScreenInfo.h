@@ -16,6 +16,12 @@ struct StateWarning {
 	StateWarning(string n, ULONGLONG ticks) : name(n), startTicks(ticks) {}
 };
 
+struct Buff {
+	BYTE state;
+	int index;
+	BOOL isBuff;
+};
+
 class ScreenInfo : public Module {
 	private:
 		map<string, string> SkillWarnings;
