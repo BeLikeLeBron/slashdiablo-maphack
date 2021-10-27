@@ -9,3 +9,4 @@ DWORD __fastcall D2CLIENT_GetUIVar_STUB(DWORD varno);
 CellFile* __fastcall D2CLIENT_LoadUiImage(CHAR* szPath);
 DWORD __fastcall D2CLIENT_ClickParty_ASM(RosterUnit* RosterUnit, DWORD Mode);
 void __fastcall D2CLIENT_PlaySound(int SoundNo);
+void* __stdcall D2WIN_LoadMpq(DWORD OrderFlag, const char* szDllFile, const char* szMpqFile, const char* szName, DWORD _1, BOOL(__stdcall* fnMPQMissing)());

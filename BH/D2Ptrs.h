@@ -492,6 +492,7 @@ VARPTR(D2LAUNCH, BnData, BnetData *, 0x25ABC, 0x25B30)
 
 FUNCPTR(D2WIN, DrawSprites, void __fastcall, (void), 0x18750, 0xEAA0)
 FUNCPTR(D2WIN, LoadCellFile, CellFile* __fastcall, (const char* szFile, int Type), -10111, -10023)
+FUNCPTR(D2WIN, UnloadCellFile, void __fastcall, (CellFile* pCellFile), -10126, -10189)
 FUNCPTR(D2WIN, DrawCellFile, void __fastcall, (CellFile * pCellFile, int xPos, int yPos, int div, int trans, int Color), -10138, -10172)
 
 
@@ -500,20 +501,26 @@ FUNCPTR(D2WIN, DrawCellFile, void __fastcall, (CellFile * pCellFile, int xPos, i
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 FUNCPTR(D2WIN, DrawText, void __fastcall, (const wchar_t *wStr, int xPos, int yPos, DWORD dwColor, DWORD dwUnk), -10150, -10076)
+FUNCPTR(D2WIN, DrawFramedText, void __fastcall, (const wchar_t* wStr, int xPos, int yPos,int nColor, int centered), -10085, -10137)
+FUNCPTR(D2WIN, DrawRectText, void __fastcall, (const wchar_t* wStr, int X, int Y, int nRectColor, int nRectTrans, int nColor), -10013, -10078)
 
 FUNCPTR(D2WIN, GetTextSize, DWORD __fastcall, (wchar_t *wStr, DWORD* dwWidth, DWORD* dwFileNo), -10177, -10179)
 FUNCPTR(D2WIN, SetTextSize, DWORD __fastcall, (DWORD dwSize), -10184, -10047)
+FUNCPTR(D2WIN, GetTextWidth, int __fastcall, (const wchar_t * wStr), -10028, -10150)
 
 FUNCPTR(D2WIN, SetControlText, void* __fastcall, (Control* box, wchar_t* txt), -10042, -10007)
 FUNCPTR(D2WIN, GetTextWidthFileNo, DWORD __fastcall, (wchar_t *wStr, DWORD* dwWidth, DWORD* dwFileNo), -10177, -10179)
 
+FUNCPTR(D2WIN, CreateImage, Control* __fastcall, (int xPos, int yPos, int SizeX, int SizeY, CellFile* pCellFile, BOOL(__stdcall* OnClick)(Control*), void* a7, BOOL(__stdcall* KeyHandle)(Control*)), -10127, -10203) //Updated 1.13c
 FUNCPTR(D2WIN, CreateEditBox, Control* __fastcall, (DWORD dwPosX, DWORD dwPosY, DWORD _1, DWORD _2, DWORD _3, DWORD _4, DWORD _5, BOOL(__stdcall *pCallback)(wchar_t* wText), DWORD _6, DWORD _7, ControlPreferences* pPreferences), 0x161B0, 0x11A10)//1.13c
 FUNCPTR(D2WIN, DestroyEditBox, VOID __fastcall, (Control* pControl), 0x159E0, 0xF320)//1.13c
 FUNCPTR(D2WIN, DestroyControl, VOID __stdcall, (Control* pControl), 0x18490, 0xE5F0)//1.13c
 FUNCPTR(D2WIN, SetEditBoxCallback, VOID __fastcall, (Control* pControl, BOOL(__stdcall *FunCallBack)(Control* pControl, DWORD dwInputType, char* pChar)), 0x13970, 0xF1D0)//1.13c
 FUNCPTR(D2WIN, SetEditBoxProc, void __fastcall, (Control* box, BOOL(__stdcall *FunCallBack)(Control*, DWORD, DWORD)), 0x13970, 0xF1D0)//Updated 1.13c
 FUNCPTR(D2WIN, SelectEditBoxText, void __fastcall, (Control* box), 0x7708, 0xEF80) //Updated 1.13c
-FUNCPTR(D2WIN, InitMPQ, DWORD __stdcall, (char *dll, const char *mpqfile, char *mpqname, int v4, int v5), 0x7E60, 0x7E50)
+
+//FUNCPTR(D2WIN, InitMPQ, MpqHandle __fastcall, (const char *dll, const char *mpqfile, const char *mpqname, int v4, void* v5, int priority), 0x7E60, 0x7E50)
+ASMPTR(D2WIN, LoadMpq_I, 0x7E60, 0x7E50)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // D2Win Globals

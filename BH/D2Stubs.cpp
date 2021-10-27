@@ -89,3 +89,18 @@ void __declspec(naked) __fastcall D2CLIENT_PlaySound(int SoundNo)
 		ret
 	}
 }
+
+__declspec(naked) void* __stdcall D2WIN_LoadMpq(DWORD OrderFlag, const char* szDllFile, const char* szMpqFile, const char* szName, DWORD _1, BOOL(__stdcall* fnMPQMissing)())
+{
+	__asm
+	{
+		push[esp + 0x18]
+		push[esp + 0x18]
+		push[esp + 0x18]
+		push[esp + 0x18]
+		push[esp + 0x18]
+		mov eax, [esp + 0x18]
+		call D2WIN_LoadMpq_I
+		ret 0x18
+	}
+}

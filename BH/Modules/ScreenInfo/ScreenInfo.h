@@ -32,7 +32,7 @@ class ScreenInfo : public Module {
 		Drawing::Texthook* mpqVersionText;
 		Drawing::Texthook* d2VersionText;
 		DWORD gameTimer;
-		DWORD endTimer;
+		DWORD endTimer;		
 
 		int packetRequests;
 		ULONGLONG warningTicks;
@@ -79,22 +79,13 @@ class ScreenInfo : public Module {
 		int	GetPlayerCount();
 		void FormattedXPPerSec(char* buffer, double xpPerSec);
 		string FormatTime(time_t t, const char* format);
-		CellFile* cf;
-		void* mpqH;
-		BOOL manageBuffs;
-		BOOL manageConv;
-		int resTracker;
-		BOOL cellLoaded;
-		vector<Buff> activeBuffs;
-		vector<BYTE> buffs;
-		vector<wchar_t*> buffNames;
 	public:
 		static map<std::string, Toggle> Toggles;
 
 		ScreenInfo() :
 			Module("Screen Info"), warningTicks(BHGetTickCount()), packetRequests(0),
 			MephistoBlocked(false), DiabloBlocked(false), BaalBlocked(false), ReceivedQuestPacket(false),
-			startExperience(0), startLevel(0) {};
+			startExperience(0), startLevel(0), mpqH(NULL), cf(NULL), cellLoaded(false) {};
 
 		void OnLoad();
 		void LoadConfig();
@@ -102,20 +93,21 @@ class ScreenInfo : public Module {
 		void OnKey(bool up, BYTE key, LPARAM lParam, bool* block);
 		void OnGameJoin();
 		void OnGameExit();
-
+	
 		void OnRightClick(bool up, int x, int y, bool* block);
 		void OnDraw();
+		void OnOOGDraw();
 		void OnAutomapDraw();
 		void OnGamePacketRecv(BYTE* packet, bool *block);
 
-		std::string ReplaceAutomapTokens(std::string& v);		
+		std::string ReplaceAutomapTokens(std::string& v);
 		void WriteRunTrackerData();
-		void DrawPopup(wchar_t* buffName, int x, int y);
-		vector<wstring> strBreakApart(wstring str, wchar_t delimiter);
 
 		static void AddDrop(UnitAny* item);
 		static void AddDrop(const string& name, unsigned int x, unsigned int y);
 };
+
+void Popup_Interception();
 
 StateCode GetStateCode(unsigned int nKey);
 StateCode GetStateCode(const char* name);

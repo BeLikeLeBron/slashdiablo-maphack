@@ -11,25 +11,15 @@
 #include <numeric>
 #include <filesystem>
 
+Patch* popupPatch = new Patch(Jump, D2CLIENT, { 0x3E7DD, 0x0 }, (int)Popup_Interception, 5);
+
 using namespace Drawing;
 
 map<std::string, Toggle> ScreenInfo::Toggles;
 
 void ScreenInfo::OnLoad() {
 	LoadConfig();
-	
 
-	//buffs
-	buffs = { STATE_QUICKNESS,STATE_FADE,STATE_CLOAKED,STATE_VENOMCLAWS,STATE_SHOUT,STATE_BATTLEORDERS,STATE_BATTLECOMMAND,STATE_OAKSAGE,STATE_CYCLONEARMOR,STATE_HURRICANE,STATE_BONEARMOR,STATE_HOLYSHIELD,STATE_FROZENARMOR,STATE_SHIVERARMOR,STATE_CHILLINGARMOR,STATE_ENCHANT,STATE_ENERGYSHIELD,STATE_THUNDERSTORM, STATE_SHRINE_EXPERIENCE,
-	//auras
-	STATE_MIGHT, STATE_PRAYER, STATE_RESISTFIRE, STATE_HOLYFIRE, STATE_THORNS, STATE_DEFIANCE, STATE_RESISTCOLD, STATE_BLESSEDAIM, STATE_STAMINA, STATE_RESISTLIGHT, STATE_CONCENTRATION, STATE_HOLYWIND, STATE_CLEANSING, STATE_HOLYSHOCK, STATE_SANCTUARY, STATE_MEDITATION, STATE_FANATICISM, STATE_REDEMPTION, STATE_CONVICTION, STATE_RESISTALL,
-	//debuffs
-	STATE_AMPLIFYDAMAGE, STATE_WEAKEN, STATE_DECREPIFY, STATE_LOWERRESIST, STATE_POISON, STATE_COLD };
-
-	buffNames = { L"Burst of Speed", L"Fade", L"Cloak of Shadows", L"Venom", L"Shout", L"Battle Orders", L"Battle Command", L"Oak Sage", L"Cyclone Armor", L"Hurricane", L"Bone Armor", L"Holy Shield", L"Frozen Armor", L"Shiver Armor", L"Chilling Armor", L"Enchant", L"Energy Shield", L"Thunder Storm", L"Experience Shrine",
-	L"Might", L"Prayer", L"Resist Fire", L"Holy Fire", L"Thorns", L"Defiance", L"Resist Cold", L"Blessed Aim", L"Vigor", L"Resist Lightning", L"Concentration", L"Holy Freeze", L"Cleansing", L"Holy Shock", L"Sanctuary", L"Meditation", L"Fanaticism", L"Redemption", L"Conviction", L"Salvation", 
-	L"Amplify Damage", L"Weaken", L"Decrepify", L"Lower Resist", L"Poisoned", L"Frozen"	};
-	
 	bhText = new Texthook(OutOfGame, 795, 6, BH_VERSION " (planqi Resurgence/Slash branch)");
 	bhText->SetAlignment(Right);
 	bhText->SetColor(Gold);
@@ -99,7 +89,7 @@ void ScreenInfo::MpqLoaded() {
 	mpqVersionText->SetColor(Gold);
 }
 
-void ScreenInfo::OnGameJoin() {
+void ScreenInfo::OnGameJoin() {	
 	BnetData* pInfo = (*p_D2LAUNCH_BnData);
 	UnitAny* unit = D2CLIENT_GetPlayerUnit();
 	if (unit) {
@@ -111,7 +101,11 @@ void ScreenInfo::OnGameJoin() {
 		if (!SetWindowText(D2GFX_GetHwnd(), title.c_str())) {
 			printf("Failed setting window text, error: %d\n\n", GetLastError());
 		}
-	}
+	}	
+	manageConv = false;
+	manageBuffs = true;
+	//}
+	activeBuffs = {};
 
 	if (bFailedToWrite) {
 		bFailedToWrite = false;
@@ -187,7 +181,7 @@ void ScreenInfo::OnGameJoin() {
 	}
 	runs[runname]++;
 	*/
-	runcounter[runname]++;
+	runcounter[runname]++;	
 
 	if (!Toggles["Run Details On Join"].state) {
 		return;
@@ -243,7 +237,7 @@ void ScreenInfo::OnKey(bool up, BYTE key, LPARAM lParam, bool* block) {
 // Right-clicking in the chat console pastes from the clipboard
 void ScreenInfo::OnRightClick(bool up, int x, int y, bool* block) {
 	if (up)
-		return;
+		return;	
 
 	int left = 130, top = 500, width = 540, height = 42;
 	if (D2CLIENT_GetUIState(0x05) && x >= left && x <= (left + width) && y >= top && y <= (top + height)) {
@@ -310,6 +304,13 @@ void ScreenInfo::OnDraw() {
 	if (!pData || !quests) {
 		return;
 	}
+	if (mpqH == NULL) {
+		mpqH = D2WIN_LoadMpq(5000, "BH.dll", "buffs.mpq", "buffs", 0, 0);
+	}
+	if (!cellLoaded) {
+		cf = D2WIN_LoadCellFile("data\\global\\ui\\spells\\buffs24", 0);
+		cellLoaded = true;
+	}
 
 	ULONGLONG ticks = BHGetTickCount();
 	ULONGLONG ms = ticks - packetTicks;
@@ -365,10 +366,10 @@ void ScreenInfo::OnDraw() {
 				warningTicks = ticks;
 			} else if (ms > 500) {
 				Texthook::Draw(*p_D2CLIENT_ScreenSizeX / 2, 30,
-						Center, 3, Red, "%s Quest Active", bossNames[warning]);
+					Center, 3, Red, "%s Quest Active", bossNames[warning]);
 			}
 		}
-	}
+	}	
 
 	UnitAny* pUnit = D2CLIENT_GetPlayerUnit();
 	currentExperience = (int)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
@@ -393,7 +394,7 @@ void ScreenInfo::OnDraw() {
 		Texthook::Draw((*p_D2CLIENT_ScreenSizeX / 2) - 100, *p_D2CLIENT_ScreenSizeY - 60, Center, 6, White, "%s", sExp);
 	}
 
-	
+
 	char gameTime[20];
 	sprintf_s(gameTime, 20, "%.2d:%.2d:%.2d", endTimer / 3600, (endTimer / 60) % 60, endTimer % 60);
 
@@ -404,77 +405,6 @@ void ScreenInfo::OnDraw() {
 	localtime_s(&time, &tTime);
 	strftime(szTime, sizeof(szTime), "%I:%M:%S %p", &time);
 
-	if (cf) {
-		//dc6 is loaded!		
-		if (manageBuffs) {
-			//received packet 0xA8 or 0xA9. Change on one of players states.
-			for (unsigned int i = 0; i < buffs.size(); i++) {
-				int state = D2COMMON_GetUnitState(pUnit, buffs[i]);
-				BOOL buffFound = false;
-				int pos = 0;				
-				for (unsigned j = 0; j < activeBuffs.size(); j++) {
-					if (activeBuffs[j].state == buffs[i]) {
-						buffFound = true;
-						pos = j;
-						break;
-					}
-				}			
-				if (state != 0 && !buffFound) {
-					//add buff to activeBuffs
-					Buff newBuff = {};
-					newBuff.state = buffs[i];
-					newBuff.index = i;
-					if (manageConv) {					
-						newBuff.isBuff = (int)D2COMMON_GetUnitStat(pUnit, STAT_FIRERESIST, 0) < resTracker ? false : true;
-					}
-					else {
-						newBuff.isBuff = i < 39 ? true : false;
-					}					
-					activeBuffs.push_back(newBuff);
-				} else if (state == 0 && buffFound) {
-					//remove buff from activeBuffs
-					activeBuffs.erase(activeBuffs.begin() + pos);
-				}			
-			}
-			manageBuffs = false;
-			manageConv = false;
-		}
-		DWORD mouseX = *p_D2CLIENT_MouseX;
-		DWORD mouseY = *p_D2CLIENT_MouseY;
-		int screenX = *p_D2CLIENT_ScreenSizeX;
-		int screenY = *p_D2CLIENT_ScreenSizeY;
-		int buffX = 117;
-		int debuffX = screenX - 117 - cf->cells[0]->width;
-		int buffY = screenY - 49;
-		int debuffY = screenY - 49;
-		int totalBuffs = 0;	
-
-		for (unsigned i = 0; i < activeBuffs.size(); i++) {
-			if (totalBuffs % 9 == 0 && totalBuffs != 0) {
-				buffX = 117;
-				buffY += cf->cells[0]->height + 1;
-			}			
-			CellContext buffContext = {};
-			buffContext.nCellNo = activeBuffs[i].index;
-			buffContext.pCellFile = cf;
-			int x = activeBuffs[i].isBuff ? buffX : debuffX;
-			int y = activeBuffs[i].isBuff ? buffY : debuffY;
-			int col = activeBuffs[i].isBuff ? 3 : 1; //3=Blue, 1=Red;
-			D2GFX_DrawCellContextEx(&buffContext, x, y, -1, DRAW_MODE_NORMAL, col);
-			if (mouseX > x && mouseX < x + cf->cells[0]->width && mouseY > y - cf->cells[0]->height && mouseY < y) {
-				DrawPopup(buffNames[activeBuffs[i].index], x + cf->cells[0]->width / 2, y - cf->cells[0]->height);
-			}
-			if (activeBuffs[i].isBuff) {
-				buffX += cf->cells[0]->width + 1;
-				totalBuffs++;
-			}
-			else {
-				debuffX -= cf->cells[0]->width + 1;				
-			}			
-		}
-		resTracker = (int)D2COMMON_GetUnitStat(pUnit, STAT_FIRERESIST, 0);
-	}
-	
 	// The call to GetLevelName somehow invalidates pUnit. This is only observable in O2 builds. The game
 	// will crash when you attempt to open the map (which calls OnAutomapDraw function). We need to get the player unit
 	// again after calling this function. It may be a good idea in general not to store the return value of
@@ -506,8 +436,15 @@ void ScreenInfo::OnDraw() {
 	automap["AREALEVEL"] = to_string(areaLevel);
 	aPlayerCountAverage[GetPlayerCount() - 1]++;
 
-	delete [] level;
+	delete [] level;	
 	
+}
+
+void ScreenInfo::OnOOGDraw() {
+	if (cellLoaded) {
+		D2WIN_UnloadCellFile(cf);
+		cellLoaded = false;
+	}
 }
 
 void ScreenInfo::FormattedXPPerSec(char* buffer, double xpPerSec) {
@@ -542,7 +479,7 @@ std::string ScreenInfo::ReplaceAutomapTokens(std::string& v) {
 	return result;
 }
 
-void ScreenInfo::OnAutomapDraw() {
+void ScreenInfo::OnAutomapDraw() {		
 	int y = 6+(BH::cGuardLoaded?16:0);
 
 	for (vector<string>::iterator it = automapInfo.begin(); it < automapInfo.end(); it++) {
@@ -551,7 +488,7 @@ void ScreenInfo::OnAutomapDraw() {
 			Texthook::Draw(*p_D2CLIENT_ScreenSizeX - 10, y, Right,0,Gold,"%s", key.c_str());
 			y += 16;
 		}
-	}
+	}	
 }
 
 void ScreenInfo::AddDrop(UnitAny* pItem) {
@@ -607,16 +544,21 @@ void ScreenInfo::OnGamePacketRecv(BYTE* packet, bool* block) {
 			ReceivedQuestPacket = true;
 			break;
 		}
-	//case 0xA8:
-	//	{
-	//		// Packet received when the character begins a new state (i.e. buff/effect received).
-	//		BYTE unitType = packet[1];
-	//		DWORD unitId = *(DWORD*)&packet[2];
-	//		BYTE packetLen = packet[6];
-	//		DWORD state = packet[7];
-	//		DWORD me = pUnit ? pUnit->dwUnitId : 0;
-	//		break;
-	//	}
+	case 0xA8:
+		{
+	    	// Packet received when the character begins a new state (i.e. buff/effect received).
+			//BYTE unitType = packet[1];
+			//DWORD unitId = *(DWORD*)&packet[2];
+			//BYTE packetLen = packet[6];
+			DWORD state = packet[7];
+			//DWORD effects = packet[8];
+			//DWORD me = pUnit ? pUnit->dwUnitId : 0;
+			if (state == 28) {
+				manageConv = true;
+			}
+			manageBuffs = true;
+			break;
+		}
 	case 0xA9:
 		{
 			// Packet received when the character ends a state (i.e. buff runs out).
@@ -629,6 +571,7 @@ void ScreenInfo::OnGamePacketRecv(BYTE* packet, bool* block) {
 					CurrentWarnings.push_back(new StateWarning(SkillWarningMap[state], BHGetTickCount()));
 				}
 			}
+			manageBuffs = true;
 			break;
 		}
 	default:
@@ -696,7 +639,7 @@ void ScreenInfo::OnGameExit() {
 
 	if (Toggles["Save Run Details"].state) {
 		WriteRunTrackerData();
-	}
+	}	
 	/*
 	cRunData->Write();
 	delete cRunData;
@@ -722,20 +665,6 @@ void ScreenInfo::WriteRunTrackerData() {
 	os << ReplaceAutomapTokens(szColumnData) << endl;
 }
 
-void ScreenInfo::DrawPopup(wchar_t* buffName, int x, int y) {	
-	int textWidth = D2WIN_GetTextWidth(buffName);
-	D2WIN_DrawRectText(buffName, x - textWidth / 2, y - 2, White, DRAW_MODE_ALPHA_50, White);
-}
-
-vector<wstring> ScreenInfo::strBreakApart(wstring str, wchar_t delimiter) {
-	wstring temp;
-	vector<wstring> parts;
-	wstringstream wss(str);
-	while (getline(wss, temp, delimiter))
-		parts.push_back(temp);
-
-	return parts;
-}
 
 // The states players can receive via packets 0xA8/0xA9
 StateCode StateCodes[] = {
@@ -1020,4 +949,15 @@ StateCode GetStateCode(const char* name) {
 		}
 	}
 	return StateCodes[0];
+}
+
+void __declspec(naked) Popup_Interception()
+{
+	__asm {
+		call ScreenInfo::PopupPatch;
+
+		pop edi;
+		pop ebx;
+		ret 16;
+	}
 }
