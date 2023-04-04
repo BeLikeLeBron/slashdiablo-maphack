@@ -10,6 +10,7 @@ std::regex Bnet::reg = std::regex("^(.*?)(\\d+)$");
 
 // Fixes Unrecoverable internal error 6FF61787
 Patch* fog10251Patch = new Patch(Jump, FOG, { 0x11690, 0x11690 }, (int)Bnet::FOG10251Patch, 5);
+Patch* bnetLobbyPatch = new Patch(Jump, D2MULTI, { 0xBC00, 0xF9B0 }, (int)Bnet::BnetLobbyAdBlockPatch, 5);
 
 Patch* nextGame1 = new Patch(Call, D2MULTI, { 0x14D29, 0xADAB }, (int)Bnet::NextGamePatch, 5);
 Patch* nextGame2 = new Patch(Call, D2MULTI, { 0x14A0B, 0xB5E9 }, (int)Bnet::NextGamePatch, 5);
@@ -50,7 +51,8 @@ void Bnet::LoadConfig() {
 
 void Bnet::InstallPatches() {
 	fog10251Patch->Install();
-
+	bnetLobbyPatch->Install();
+	
 	if (*showLastGame || *nextInstead) {
 		nextGame1->Install();
 		nextGame2->Install();
@@ -72,6 +74,7 @@ void Bnet::InstallPatches() {
 
 void Bnet::RemovePatches() {
 	fog10251Patch->Remove();
+	bnetLobbyPatch->Remove();
 
 	nextGame1->Remove();
 	nextGame2->Remove();
@@ -143,6 +146,10 @@ void Bnet::OnGameExit() {
 
 VOID __fastcall Bnet::FOG10251Patch(DWORD lpCriticalSection, char nLine) {
 	return;
+}
+
+DWORD __stdcall Bnet::BnetLobbyAdBlockPatch(DWORD a1) {
+	return 1;
 }
 
 VOID __fastcall Bnet::NextGamePatch(Control* box, BOOL (__stdcall *FunCallBack)(Control*, DWORD, DWORD)) {
