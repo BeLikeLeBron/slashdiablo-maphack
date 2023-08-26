@@ -100,6 +100,11 @@ void ScreenInfo::MpqLoaded() {
 }
 
 void ScreenInfo::OnGameJoin() {	
+	UnitsOverall.clear();
+	UnitsDead.clear();
+	killscounter["total"] = 0;
+	killscounter["unique"] = 0;
+	killscounter["champ"] = 0;
 	BnetData* pInfo = (*p_D2LAUNCH_BnData);
 	UnitAny* unit = D2CLIENT_GetPlayerUnit();
 	if (unit) {
@@ -168,7 +173,9 @@ void ScreenInfo::OnGameJoin() {
 	automap["ACCOUNTNAME"] = pData->szAccountName;
 	automap["CHARNAME"] = pUnit->pPlayerData->szName;
 	automap["SESSIONGAMECOUNT"] = to_string(++nTotalGames);
-
+	automap["TOTALKILLED"] = to_string(killscounter["total"]);
+	automap["UNIQUEKILLED"] = to_string(killscounter["unique"]);
+	automap["CHAMPKILLED"] = to_string(killscounter["champ"]);
 	/*
 	string p = ReplaceAutomapTokens(szSavePath);
 	cRunData = new Config(p + ".dat");
@@ -368,11 +375,12 @@ void ScreenInfo::OnDraw() {
 		int startedBaal = D2COMMON_GetQuestFlag2(quests, EVE_OF_DESTRUCTION, QFLAG_QUEST_STARTED) | D2COMMON_GetQuestFlag2(quests, EVE_OF_DESTRUCTION, QFLAG_QUEST_LEAVE_TOWN);
 
 		int warning = -1;
-		if (doneDuriel && startedMephisto && !doneMephisto && !MephistoBlocked) {
+		int CurrentAct = D2CLIENT_GetPlayerUnit()->dwAct;
+		if (doneDuriel && startedMephisto && !doneMephisto && !MephistoBlocked && CurrentAct == 2) {
 			warning = 0;
-		} else if (doneMephisto && startedDiablo && !doneDiablo && !DiabloBlocked) {
+		} else if (doneMephisto && startedDiablo && !doneDiablo && !DiabloBlocked && CurrentAct == 3) {
 			warning = 1;
-		} else if (xpac && doneDiablo && startedBaal && !doneBaal && !BaalBlocked) {
+		} else if (xpac && doneDiablo && startedBaal && !doneBaal && !BaalBlocked && CurrentAct == 4) {
 			warning = 2;
 		}
 		if (warning >= 0) {
@@ -510,6 +518,25 @@ void ScreenInfo::OnDraw() {
 	} else {
 		areaLevel = levelTxt->wMonLvl[D2CLIENT_GetDifficulty()];
 	}
+	for (Room1* room1 = pUnit->pAct->pRoom1; room1; room1 = room1->pRoomNext) {
+		for (UnitAny* unit = room1->pUnitFirst; unit; unit = unit->pListNext) {
+			if (unit->dwType == UNIT_MONSTER) {
+				if (unit->dwMode == 12) {
+					if (UnitsDead.find(unit->dwUnitId) == UnitsDead.end() && UnitsOverall.find(unit->dwUnitId) != UnitsOverall.end()) {
+						UnitsDead[unit->dwUnitId] = 1;
+						killscounter["total"]++;
+						if (unit->pMonsterData->fChamp)
+							killscounter["champ"]++;
+						else if (unit->pMonsterData->fBoss)
+							killscounter["unique"]++;
+					}
+				}
+				else {
+					UnitsOverall[unit->dwUnitId] = 1;
+				}
+			}
+		}
+	}
 
 	automap["CURRENTCHARLEVEL"] = to_string(currentLevel);
 	automap["CURRENTCHARLEVELPERCENT"] = to_string(static_cast<double>(currentLevel) + (pExp / 100.0));
@@ -521,6 +548,9 @@ void ScreenInfo::OnDraw() {
 	automap["REALTIME"] = szTime;
 	automap["AREALEVEL"] = to_string(areaLevel);
 	aPlayerCountAverage[GetPlayerCount() - 1]++;
+	automap["TOTALKILLED"] = to_string(killscounter["total"]);
+	automap["UNIQUEKILLED"] = to_string(killscounter["unique"]);
+	automap["CHAMPKILLED"] = to_string(killscounter["champ"]);
 
 	delete [] level;	
 	

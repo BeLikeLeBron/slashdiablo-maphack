@@ -72,6 +72,9 @@ class ScreenInfo : public Module {
 
 		map<string, string> automap;
 		map<string, int> runcounter;
+		map<string, int> killscounter;
+		map<DWORD, int> UnitsOverall;
+		map<DWORD, int> UnitsDead;
 		vector<pair<string, string>> runDetailsColumns;
 		map<string, unsigned int> runs;
 
