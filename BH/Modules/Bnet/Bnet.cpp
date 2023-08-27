@@ -145,6 +145,7 @@ void Bnet::OnGameExit() {
 
 VOID __fastcall Bnet::FOG10251Patch(DWORD lpCriticalSection, char nLine) {
 	return;
+}
 
 DWORD __stdcall Bnet::BnetLobbyAdBlockPatch(DWORD a1) {
 	return 1;

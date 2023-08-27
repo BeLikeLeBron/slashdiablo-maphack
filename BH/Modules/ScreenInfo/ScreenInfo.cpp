@@ -56,6 +56,9 @@ void ScreenInfo::OnLoad() {
 	automap["LASTXPPERSEC"] = szLastXpPerSec;
 	automap["LASTGAMETIME"] = szLastGameTime;
 	automap["SESSIONGAMECOUNT"] = to_string(nTotalGames);
+	killscounter["total"] = 0;
+	killscounter["unique"] = 0;
+	killscounter["champ"] = 0;
 }
 
 void ScreenInfo::LoadConfig() {
@@ -99,7 +102,10 @@ void ScreenInfo::MpqLoaded() {
 	mpqVersionText->SetColor(Gold);
 }
 
-void ScreenInfo::OnGameJoin() {	
+void ScreenInfo::OnGameJoin() {
+	automap["LAST_TOTALKILLED"] = to_string(killscounter["total"]);
+	automap["LAST_UNIQUEKILLED"] = to_string(killscounter["unique"]);
+	automap["LAST_CHAMPKILLED"] = to_string(killscounter["champ"]);
 	UnitsOverall.clear();
 	UnitsDead.clear();
 	killscounter["total"] = 0;
