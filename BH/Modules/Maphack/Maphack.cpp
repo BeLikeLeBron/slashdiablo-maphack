@@ -175,6 +175,7 @@ void Maphack::ReadConfig() {
 	BH::config->ReadToggle("Show Automap On Join", "None", false, Toggles["Show Automap On Join"]);
 	BH::config->ReadToggle("Skip NPC Quest Messages", "None", true, Toggles["Skip NPC Quest Messages"]);
 
+	BH::config->ReadToggle("Show Normal Monsters", "None", true, Toggles["Show Normal Monsters"]);
 	BH::config->ReadInt("Minimap Max Ghost", automapDraw.maxGhost);
 }
 
@@ -263,6 +264,8 @@ void Maphack::OnLoad() {
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Monster Resistances"].state, "  Resistances");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Monster Resistances"].toggle, "");
 	
+	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Show Normal Monsters"].state, "  Normal Monsters");
+	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Show Normal Monsters"].toggle, "");
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Show Missiles"].state, "Show Missiles");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Show Missiles"].toggle, "");
 
@@ -284,11 +287,11 @@ void Maphack::OnLoad() {
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Display Level Names"].state, "Level Names");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Display Level Names"].toggle, "");
 
-	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply CPU Patch"].state, "CPU Patch");
-	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply CPU Patch"].toggle, "");
+	//new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply CPU Patch"].state, "CPU Patch");
+	//new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply CPU Patch"].toggle, "");
 
-	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply FPS Patch"].state, "FPS Patch (SP Only)");
-	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply FPS Patch"].toggle, "");
+	//new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply FPS Patch"].state, "FPS Patch (SP Only)");
+	//new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply FPS Patch"].toggle, "");
 
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Show Automap On Join"].state, "Show Automap On Join");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Show Automap On Join"].toggle, "");
@@ -510,6 +513,10 @@ void Maphack::OnAutomapDraw() {
 						continue;
 					}
 
+					if (!Toggles["Show Normal Monsters"].state && !unit->pMonsterData->fBoss && !unit->pMonsterData->fChamp && !unit->pMonsterData->fMinion) {
+						continue;
+					}
+
 					// User can make it draw lines to monsters
 					if (automapMonsterLines.find(unit->dwTxtFileNo) != automapMonsterLines.end() ) {
 						lineColor = automapMonsterLines[unit->dwTxtFileNo];
@@ -568,6 +575,7 @@ void Maphack::OnAutomapDraw() {
 					if (unit->pMonsterData->fSuperUniq &&
 						automapSuperUniqueColors.find(unit->pMonsterData->wUniqueNo) != automapSuperUniqueColors.end()) {
 						color = automapSuperUniqueColors[unit->pMonsterData->wUniqueNo];
+						lineColor = automapSuperUniqueColors[unit->pMonsterData->wUniqueNo];
 					}
 
 					// auras has highest predence
