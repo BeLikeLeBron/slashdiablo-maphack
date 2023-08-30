@@ -487,6 +487,10 @@ VARPTR(D2LAUNCH, BnData, BnetData *, 0x25ABC, 0x25B30)
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
+FUNCPTR(FOG, mpqOpenFile, uint32_t __fastcall, (char* path, void** buffer), -10102, -10102)
+FUNCPTR(FOG, mpqCloseFile, uint32_t __fastcall, (void* mpq_file), -10103, -10103)
+FUNCPTR(FOG, mpqReadFile, uint32_t __fastcall, (void* mpq_file, uint8_t* buffer, uint32_t nb_to_read, uint32_t* nb_read, int, int, int), -10104, -10104)
+FUNCPTR(FOG, mpqGetFileSize, uint32_t __fastcall, (void* mpq_file, uintptr_t* to_reset), -10105, -10105)
 // D2Win Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////
 

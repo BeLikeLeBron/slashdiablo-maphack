@@ -101,7 +101,6 @@ class ScreenInfo : public Module {
 
 		void OnLoad();
 		void LoadConfig();
-		void MpqLoaded();
 		void OnKey(bool up, BYTE key, LPARAM lParam, bool* block);
 		void OnGameJoin();
 		void OnGameExit();
@@ -123,4 +122,4 @@ class ScreenInfo : public Module {
 
 StateCode GetStateCode(unsigned int nKey);
 StateCode GetStateCode(const char* name);
-long long ExpByLevel[];
+DWORD ExpByLevel[];

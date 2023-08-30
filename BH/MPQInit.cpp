@@ -12,7 +12,7 @@ std::map<std::string, ItemAttributes*> ItemAttributeMap;
 
 // These are the standard item attributes (if we can't read the patch mpq file)
 #pragma region DEFAULTS
-ItemAttributes ItemAttributeList[] = {
+/*ItemAttributes ItemAttributeList[] = {
 	{"Cap", "cap", "Helm", 2, 2, 0, 0, 0, 1, 0, 0, 0, 1},
 	{"Skull Cap", "skp", "Helm", 2, 2, 0, 0, 0, 1, 0, 0, 0, 5},
 	{"Helm", "hlm", "Helm", 2, 2, 0, 0, 0, 1, 0, 0, 0, 11},
@@ -787,7 +787,7 @@ StatProperties StatPropertiesList[] = {
 	{"Curse Resistance", 9, 0, 0},
 	{"Poison Length Reduction", 8, 0, 20},
 	{"Adds Damage", 9, 0, 20},
-	{"Hit Causes Monster To Flee", 7, 0, 0},
+	{"Hit Causes Monster To Flee", 7, 0, -1},
 	{"Hit Blinds Target", 7, 0, 0},
 	{"Damage To Mana", 6, 0, 0},
 	{"Ignore Target's Defense", 1, 0, 0},
@@ -1034,7 +1034,7 @@ StatProperties StatPropertiesList[] = {
 	{"Quest Item Difficulty", 2, 0, 0},
 	{"Passive Magical Damage Mastery", 9, 0, 50},
 	{"Passive Magical Resistance Reduction", 8, 0, 0}
-};
+};*/
 #pragma endregion
 
 bool IsInitialized() {

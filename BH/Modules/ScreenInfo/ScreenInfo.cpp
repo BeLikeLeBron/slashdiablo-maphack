@@ -40,7 +40,7 @@ void ScreenInfo::OnLoad() {
 	d2VersionText->SetFont(1);
 
 	if (BH::cGuardLoaded) {
-		Texthook* cGuardText = new Texthook(Perm, 790, 23, "�c4cGuard Loaded");
+		Texthook* cGuardText = new Texthook(Perm, 790, 23, "\377c4cGuard Loaded");
 		cGuardText->SetAlignment(Right);
 	}
 	gameTimer = GetTickCount();
@@ -48,11 +48,11 @@ void ScreenInfo::OnLoad() {
 	szGamesToLevel = "N/A";
 	szTimeToLevel = "N/A";
 	szLastXpGainPer = "N/A";
-	szLastXpGainPer = "N/A";
+	szLastXpPerSec = "N/A";
 	szLastGameTime = "N/A";
 	automap["GAMESTOLVL"] = szGamesToLevel;
 	automap["TIMETOLVL"] = szTimeToLevel;
-	automap["LASTXPPERCENT"] = szLastXpGainPer;
+	automap["LASTXPPERCENTGAINED"] = szLastXpGainPer;
 	automap["LASTXPPERSEC"] = szLastXpPerSec;
 	automap["LASTGAMETIME"] = szLastGameTime;
 	automap["SESSIONGAMECOUNT"] = to_string(nTotalGames);
@@ -97,11 +97,6 @@ void ScreenInfo::LoadConfig() {
 	}
 }
 
-void ScreenInfo::MpqLoaded() {
-	mpqVersionText = new Texthook(Perm, 5, 589, MpqVersion);
-	mpqVersionText->SetColor(Gold);
-}
-
 void ScreenInfo::OnGameJoin() {
 	automap["LAST_TOTALKILLED"] = to_string(killscounter["total"]);
 	automap["LAST_UNIQUEKILLED"] = to_string(killscounter["unique"]);
@@ -138,7 +133,7 @@ void ScreenInfo::OnGameJoin() {
 
 	gameTimer = GetTickCount();
 	UnitAny* pUnit = D2CLIENT_GetPlayerUnit();
-	startExperience = (int)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
+	startExperience = (DWORD)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
 	if (currentPlayer.compare(0, 16, pUnit->pPlayerData->szName) != 0) {
 		szGamesToLevel = "N/A";
 		szTimeToLevel = "N/A";
@@ -153,7 +148,7 @@ void ScreenInfo::OnGameJoin() {
 	char* szDiff[3] = { "Normal", "Nightmare", "Hell" };
 	currentPlayer = string(pUnit->pPlayerData->szName);
 	startLevel = (int)D2COMMON_GetUnitStat(pUnit, STAT_LEVEL, 0);
-	double startPctExp = ((double)startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
+	double startPctExp = (double)(startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
 
 	time_t t
 		= chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -405,15 +400,15 @@ void ScreenInfo::OnDraw() {
 	}	
 
 	UnitAny* pUnit = D2CLIENT_GetPlayerUnit();
-	currentExperience = (int)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
+	currentExperience = (DWORD)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
 	currentLevel = (int)D2COMMON_GetUnitStat(pUnit, STAT_LEVEL, 0);
 
 	endTimer = ((GetTickCount() - gameTimer) / 1000);
 	if (startLevel == 0) { startLevel = currentLevel; }
 
 	char sExp[255] = { 0 };
-	double oldPctExp = ((double)startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
-	double pExp = ((double)currentExperience - ExpByLevel[currentLevel - 1]) / (ExpByLevel[currentLevel] - ExpByLevel[currentLevel - 1]) * 100.0;
+	double oldPctExp = (double)(startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
+	double pExp = (double)(currentExperience - ExpByLevel[currentLevel - 1]) / (ExpByLevel[currentLevel] - ExpByLevel[currentLevel - 1]) * 100.0;
 	currentExpGainPct = pExp - oldPctExp;
 	if (currentLevel > startLevel) {
 		currentExpGainPct = (100 - oldPctExp) + pExp + ((currentLevel - startLevel) - 1) * 100;
@@ -979,7 +974,7 @@ StateCode StateCodes[] = {
 	{"FADE", 159}
 };
 
-long long ExpByLevel[] = {
+DWORD ExpByLevel[] = {
 	0,
 	500,
 	1500,
@@ -1080,7 +1075,7 @@ long long ExpByLevel[] = {
 	3229426756,
 	3520485254,
 	3837739017,
-	9999999999
+	4294967295
 };
 
 StateCode GetStateCode(unsigned int nKey) {
