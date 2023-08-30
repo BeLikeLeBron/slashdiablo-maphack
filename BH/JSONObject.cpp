@@ -620,7 +620,7 @@ bool JSONArray::equals(JSONElement *other){
 	if (other && other->getType() == JSON_ARRAY){
 		JSONArray *o = (JSONArray*)other;
 		if (_elements.size() == o->_elements.size()){
-			for (int i = 0; i < _elements.size(); i++){
+			for (unsigned int i = 0; i < _elements.size(); i++){
 				if (!get(i)->equals(o->get(i))){
 					return false;
 				}

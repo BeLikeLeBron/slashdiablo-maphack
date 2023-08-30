@@ -86,7 +86,7 @@ unsigned int Keyhook::GetXSize() {
 	KeyCode keyCode = GetKeyCode(GetKey());
 	string prefix = "";
 	if (name.length() > 0)
-		prefix = name + ":ÿc4 ";
+		prefix = name + ":\377c4 ";
 	string text = prefix + keyCode.literalName;
 	DWORD width, fileNo;
 	wchar_t* wString = AnsiToUnicode(text.c_str());

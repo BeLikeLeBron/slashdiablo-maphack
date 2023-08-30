@@ -75,19 +75,19 @@ bool ModuleManager::UserInput(wchar_t* module, wchar_t* msg, bool fromGame) {
 	bool block = false;
 	std::string name;
 	std::wstring modname(module);
-	name.assign(modname.begin(), modname.end());
+	name = WStringToString(modname);
 	transform(name.begin(), name.end(), name.begin(), ::tolower);
 
 	if (name.compare("reload") == 0)
 	{
 		ReloadConfig();
-		Print("ÿc4BH:ÿc0 Successfully reloaded configuration.");
+		Print("\377c4BH:\377c0 Successfully reloaded configuration.");
 		return true;
 	}
 
 	if (name.compare("save") == 0) {
 		BH::config->Write();
-		Print("ÿc4BH:ÿc0 Successfully saved configuration.");
+		Print("\377c4BH:\377c0 Successfully saved configuration.");
 	}
 
 	for (map<string, Module*>::iterator it = moduleList.begin(); it != moduleList.end(); ++it) {

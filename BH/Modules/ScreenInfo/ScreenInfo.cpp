@@ -238,9 +238,13 @@ string ScreenInfo::SimpleGameName(const string& gameName) {
 }
 
 string ScreenInfo::FormatTime(time_t t, const char* format) {
-	stringstream ss;
-	ss << put_time(std::localtime(&t), format);
-	return ss.str();
+	//stringstream ss;
+    struct tm time;
+    CHAR szTime[128] = "";
+    localtime_s(&time, &t);
+    strftime(szTime, sizeof(szTime), format, &time);
+	//ss << put_time(std::localtime(&t), format);
+	return szTime;// ss.str();
 }
 
 void ScreenInfo::OnKey(bool up, BYTE key, LPARAM lParam, bool* block) {	
@@ -487,8 +491,8 @@ void ScreenInfo::OnDraw() {
 			CellContext buffContext = {};
 			buffContext.nCellNo = activeBuffs[i].index;
 			buffContext.pCellFile = cf;
-			int x = activeBuffs[i].isBuff ? buffX : debuffX;
-			int y = activeBuffs[i].isBuff ? buffY : debuffY;
+			unsigned int x = activeBuffs[i].isBuff ? buffX : debuffX;
+			unsigned int y = activeBuffs[i].isBuff ? buffY : debuffY;
 			int col = activeBuffs[i].isBuff ? 3 : 1; //3=Blue, 1=Red;
 			D2GFX_DrawCellContextEx(&buffContext, x, y, -1, DRAW_MODE_NORMAL, col);
 			if (mouseX > x && mouseX < x + cf->cells[0]->width && mouseY > y - cf->cells[0]->height && mouseY < y) {
@@ -583,7 +587,7 @@ void ScreenInfo::FormattedXPPerSec(char* buffer, double xpPerSec) {
 		xpPerSec /= 1E3;
 		unit = "K";
 	}
-	sprintf(buffer, "%s%.2f%s/s", xpPerSec >= 0 ? "+" : "", xpPerSec, unit);
+	sprintf_s(buffer, 128, "%s%.2f%s/s", xpPerSec >= 0 ? "+" : "", xpPerSec, unit);
 }
 
 std::string ScreenInfo::ReplaceAutomapTokens(std::string& v) {
@@ -717,7 +721,7 @@ void ScreenInfo::OnGameExit() {
 	double lastExpGainPct = currentExpGainPct;
 	double lastExpPerSecond = currentExpPerSecond;
 	int lastGameLength = endTimer;
-	int timeToLevel = gamesToLevel * lastGameLength;
+	int timeToLevel = (int)(gamesToLevel * lastGameLength);
 
 	char buffer[128];
 	sprintf_s(buffer, sizeof(buffer), "%.2f", gamesToLevel);

@@ -128,7 +128,7 @@ unsigned int Inputhook::GetCharacterLimit() {
 	 POINT textSize = Texthook::GetTextSize(GetText().substr(textPos, GetCursorPosition() - textPos), GetFont());
 
 	 //Draw the outline box!
-	 RECT pRect  = {GetX(), GetY(), GetX() + GetXSize(), GetY() + height[GetFont()] + 4};
+	 RECT pRect  = {static_cast<long>(GetX()), static_cast<long>(GetY()), static_cast<long>(GetX() + GetXSize()), static_cast<long>(GetY() + height[GetFont()] + 4)};
 	 D2GFX_DrawRectangle(GetX(), GetY(), GetX() + GetXSize(), GetY() + height[GetFont()] + 4, 0, BTFull);
 	 Framehook::DrawRectStub(&pRect);
 	 string drawnText = text;
@@ -141,8 +141,8 @@ unsigned int Inputhook::GetCharacterLimit() {
 
 	 
 	 if (IsSelected()) {
-		 drawnText.insert(GetSelectionPosition() + GetSelectionLength(), "ÿc0");
-		 drawnText.insert(GetSelectionPosition(), "ÿc9");
+		 drawnText.insert(GetSelectionPosition() + GetSelectionLength(), "\377c0");
+		 drawnText.insert(GetSelectionPosition(), "\377c9");
 	 }
 
 	

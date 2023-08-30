@@ -147,7 +147,7 @@ public:
 
 	bool Evaluate(UnitItemInfo *uInfo, ItemInfo *info, Condition *arg1, Condition *arg2);
 
-	BYTE conditionType;
+	BYTE conditionType{};
 private:
 	virtual bool EvaluateInternal(UnitItemInfo *uInfo, Condition *arg1, Condition *arg2) { return false; }
 	virtual bool EvaluateInternalFromPacket(ItemInfo *info, Condition *arg1, Condition *arg2) { return false; }
