@@ -1191,199 +1191,202 @@ void InitializeMPQData() {
 			}
 		}
 
-        data = MpqDataMap.find("weapons");
-        if (data != MpqDataMap.end())
+
+
+    }
+
+    data = MpqDataMap.find("weapons");
+    if (data != MpqDataMap.end())
+    {
+        for (auto d = data->second->data.begin(); d < data->second->data.end(); d++)
         {
-            for (auto d = data->second->data.begin(); d < data->second->data.end(); d++)
+            if ((*d)["code"].length() > 0)
             {
-                if ((*d)["code"].length() > 0)
+                std::set<std::string> ancestorTypes;
+                char stackable = ((*d)["stackable"].length() > 0 ? (*d)["stackable"].at(0) - 48 : 0),
+                     useable = ((*d)["useable"].length() > 0 ? (*d)["useable"].at(0) - 48 : 0),
+                     throwable = ((*d)["throwable"].length() > 0 ? (*d)["throwable"].at(0) - 48 : 0);
+                unsigned int flags = ITEM_GROUP_ALLWEAPON, flags2 = 0;
+                FindAncestorTypes((*d)["type"], ancestorTypes, parentMap1, parentMap2);
+
+                if ((*d)["code"].compare((*d)["ultracode"]) == 0)
                 {
-                    std::set<std::string> ancestorTypes;
-                    char stackable = ((*d)["stackable"].length() > 0 ? (*d)["stackable"].at(0) - 48 : 0),
-                         useable = ((*d)["useable"].length() > 0 ? (*d)["useable"].at(0) - 48 : 0),
-                         throwable = ((*d)["throwable"].length() > 0 ? (*d)["throwable"].at(0) - 48 : 0);
-                    unsigned int flags = ITEM_GROUP_ALLWEAPON, flags2 = 0;
-                    FindAncestorTypes((*d)["type"], ancestorTypes, parentMap1, parentMap2);
-
-                    if ((*d)["code"].compare((*d)["ultracode"]) == 0)
-                    {
-                        flags |= ITEM_GROUP_ELITE;
-                    }
-                    else if ((*d)["code"].compare((*d)["ubercode"]) == 0)
-                    {
-                        flags |= ITEM_GROUP_EXCEPTIONAL;
-                    }
-                    else
-                    {
-                        flags |= ITEM_GROUP_NORMAL;
-                    }
-                    if (ancestorTypes.find("club") != ancestorTypes.end() ||
-                        ancestorTypes.find("hamm") != ancestorTypes.end() ||
-                        ancestorTypes.find("mace") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_MACE;
-                    }
-                    else if (ancestorTypes.find("wand") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_WAND;
-                    }
-                    else if (ancestorTypes.find("staf") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_STAFF;
-                    }
-                    else if (ancestorTypes.find("bow") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_BOW;
-                    }
-                    else if (ancestorTypes.find("axe") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_AXE;
-                    }
-                    else if (ancestorTypes.find("scep") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_SCEPTER;
-                    }
-                    else if (ancestorTypes.find("swor") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_SWORD;
-                    }
-                    else if (ancestorTypes.find("knif") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_DAGGER;
-                    }
-                    else if (ancestorTypes.find("spea") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_SPEAR;
-                    }
-                    else if (ancestorTypes.find("pole") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_POLEARM;
-                    }
-                    else if (ancestorTypes.find("xbow") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_CROSSBOW;
-                    }
-                    else if (ancestorTypes.find("jave") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_JAVELIN;
-                    }
-                    if (ancestorTypes.find("thro") != ancestorTypes.end())
-                    {
-                        flags |= ITEM_GROUP_THROWING;
-                    }
-                    flags = AssignClassFlags((*d)["type"], ancestorTypes, flags);
-
-                    ItemAttributes *attrs = new ItemAttributes();
-                    attrs->name = (*d)["name"];
-                    attrs->code[0] = (*d)["code"].c_str()[0];
-                    attrs->code[1] = (*d)["code"].c_str()[1];
-                    attrs->code[2] = (*d)["code"].c_str()[2];
-                    attrs->code[3] = 0;
-                    attrs->category = (*d)["type"];
-                    attrs->width = (*d)["invwidth"].at(0) - '0';
-                    attrs->height = (*d)["invheight"].at(0) - '0';
-                    attrs->stackable = stackable;
-                    attrs->useable = useable;
-                    attrs->throwable = throwable;
-                    attrs->itemLevel = 0;
-                    attrs->unusedFlags = 0;
-                    attrs->flags = flags;
-                    attrs->flags2 = flags2;
-                    attrs->qualityLevel = stoi((*d)["level"], nullptr, 10);
-                    attrs->magicLevel = atoi((*d)["magic lvl"].c_str());
-                    ItemAttributeMap[(*d)["code"]] = attrs;
+                    flags |= ITEM_GROUP_ELITE;
                 }
+                else if ((*d)["code"].compare((*d)["ubercode"]) == 0)
+                {
+                    flags |= ITEM_GROUP_EXCEPTIONAL;
+                }
+                else
+                {
+                    flags |= ITEM_GROUP_NORMAL;
+                }
+                if (ancestorTypes.find("club") != ancestorTypes.end() ||
+                    ancestorTypes.find("hamm") != ancestorTypes.end() ||
+                    ancestorTypes.find("mace") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_MACE;
+                }
+                else if (ancestorTypes.find("wand") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_WAND;
+                }
+                else if (ancestorTypes.find("staf") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_STAFF;
+                }
+                else if (ancestorTypes.find("bow") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_BOW;
+                }
+                else if (ancestorTypes.find("axe") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_AXE;
+                }
+                else if (ancestorTypes.find("scep") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_SCEPTER;
+                }
+                else if (ancestorTypes.find("swor") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_SWORD;
+                }
+                else if (ancestorTypes.find("knif") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_DAGGER;
+                }
+                else if (ancestorTypes.find("spea") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_SPEAR;
+                }
+                else if (ancestorTypes.find("pole") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_POLEARM;
+                }
+                else if (ancestorTypes.find("xbow") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_CROSSBOW;
+                }
+                else if (ancestorTypes.find("jave") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_JAVELIN;
+                }
+                if (ancestorTypes.find("thro") != ancestorTypes.end())
+                {
+                    flags |= ITEM_GROUP_THROWING;
+                }
+                flags = AssignClassFlags((*d)["type"], ancestorTypes, flags);
+
+                ItemAttributes *attrs = new ItemAttributes();
+                attrs->name = (*d)["name"];
+                attrs->code[0] = (*d)["code"].c_str()[0];
+                attrs->code[1] = (*d)["code"].c_str()[1];
+                attrs->code[2] = (*d)["code"].c_str()[2];
+                attrs->code[3] = 0;
+                attrs->category = (*d)["type"];
+                attrs->width = (*d)["invwidth"].at(0) - '0';
+                attrs->height = (*d)["invheight"].at(0) - '0';
+                attrs->stackable = stackable;
+                attrs->useable = useable;
+                attrs->throwable = throwable;
+                attrs->itemLevel = 0;
+                attrs->unusedFlags = 0;
+                attrs->flags = flags;
+                attrs->flags2 = flags2;
+                attrs->qualityLevel = stoi((*d)["level"], nullptr, 10);
+                attrs->magicLevel = atoi((*d)["magic lvl"].c_str());
+                ItemAttributeMap[(*d)["code"]] = attrs;
             }
         }
+    }
 
-        data = MpqDataMap.find("misc");
-        if (data != MpqDataMap.end())
+    data = MpqDataMap.find("misc");
+    if (data != MpqDataMap.end())
+    {
+        for (auto d = data->second->data.begin(); d < data->second->data.end(); d++)
         {
-            for (auto d = data->second->data.begin(); d < data->second->data.end(); d++)
+            if ((*d)["code"].length() > 0)
             {
-                if ((*d)["code"].length() > 0)
+                std::set<std::string> ancestorTypes;
+                char stackable = ((*d)["stackable"].length() > 0 ? (*d)["stackable"].at(0) - 48 : 0),
+                     useable = ((*d)["useable"].length() > 0 ? (*d)["useable"].at(0) - 48 : 0),
+                     throwable = ((*d)["throwable"].length() > 0 ? (*d)["throwable"].at(0) - 48 : 0);
+                unsigned int flags = 0, flags2 = 0;
+                FindAncestorTypes((*d)["type"], ancestorTypes, parentMap1, parentMap2);
+                FindAncestorTypes((*d)["type2"], ancestorTypes, parentMap1, parentMap2);
+
+                if (ancestorTypes.find("rune") != ancestorTypes.end())
                 {
-                    std::set<std::string> ancestorTypes;
-                    char stackable = ((*d)["stackable"].length() > 0 ? (*d)["stackable"].at(0) - 48 : 0),
-                         useable = ((*d)["useable"].length() > 0 ? (*d)["useable"].at(0) - 48 : 0),
-                         throwable = ((*d)["throwable"].length() > 0 ? (*d)["throwable"].at(0) - 48 : 0);
-                    unsigned int flags = 0, flags2 = 0;
-                    FindAncestorTypes((*d)["type"], ancestorTypes, parentMap1, parentMap2);
-                    FindAncestorTypes((*d)["type2"], ancestorTypes, parentMap1, parentMap2);
-
-                    if (ancestorTypes.find("rune") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_RUNE;
-                    }
-                    if (ancestorTypes.find("gem0") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_CHIPPED;
-                    }
-                    else if (ancestorTypes.find("gem1") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_FLAWED;
-                    }
-                    else if (ancestorTypes.find("gem2") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_REGULAR;
-                    }
-                    else if (ancestorTypes.find("gem3") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_FLAWLESS;
-                    }
-                    else if (ancestorTypes.find("gem4") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_PERFECT;
-                    }
-                    if (ancestorTypes.find("gema") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_AMETHYST;
-                    }
-                    else if (ancestorTypes.find("gemd") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_DIAMOND;
-                    }
-                    else if (ancestorTypes.find("geme") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_EMERALD;
-                    }
-                    else if (ancestorTypes.find("gemr") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_RUBY;
-                    }
-                    else if (ancestorTypes.find("gems") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_SAPPHIRE;
-                    }
-                    else if (ancestorTypes.find("gemt") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_TOPAZ;
-                    }
-                    else if (ancestorTypes.find("gemz") != ancestorTypes.end())
-                    {
-                        flags2 |= ITEM_GROUP_SKULL;
-                    }
-
-                    ItemAttributes *attrs = new ItemAttributes();
-                    attrs->name = (*d)["name"];
-                    attrs->code[0] = (*d)["code"].c_str()[0];
-                    attrs->code[1] = (*d)["code"].c_str()[1];
-                    attrs->code[2] = (*d)["code"].c_str()[2];
-                    attrs->code[3] = 0;
-                    attrs->category = (*d)["type"];
-                    attrs->width = (*d)["invwidth"].at(0) - '0';
-                    attrs->height = (*d)["invheight"].at(0) - '0';
-                    attrs->stackable = stackable;
-                    attrs->useable = useable;
-                    attrs->throwable = throwable;
-                    attrs->itemLevel = 0;
-                    attrs->unusedFlags = 0;
-                    attrs->flags = flags;
-                    attrs->flags2 = flags2;
-                    attrs->qualityLevel = stoi((*d)["level"], nullptr, 10);
-                    attrs->magicLevel = 0;
-                    ItemAttributeMap[(*d)["code"]] = attrs;
+                    flags2 |= ITEM_GROUP_RUNE;
                 }
+                if (ancestorTypes.find("gem0") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_CHIPPED;
+                }
+                else if (ancestorTypes.find("gem1") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_FLAWED;
+                }
+                else if (ancestorTypes.find("gem2") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_REGULAR;
+                }
+                else if (ancestorTypes.find("gem3") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_FLAWLESS;
+                }
+                else if (ancestorTypes.find("gem4") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_PERFECT;
+                }
+                if (ancestorTypes.find("gema") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_AMETHYST;
+                }
+                else if (ancestorTypes.find("gemd") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_DIAMOND;
+                }
+                else if (ancestorTypes.find("geme") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_EMERALD;
+                }
+                else if (ancestorTypes.find("gemr") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_RUBY;
+                }
+                else if (ancestorTypes.find("gems") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_SAPPHIRE;
+                }
+                else if (ancestorTypes.find("gemt") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_TOPAZ;
+                }
+                else if (ancestorTypes.find("gemz") != ancestorTypes.end())
+                {
+                    flags2 |= ITEM_GROUP_SKULL;
+                }
+
+                ItemAttributes *attrs = new ItemAttributes();
+                attrs->name = (*d)["name"];
+                attrs->code[0] = (*d)["code"].c_str()[0];
+                attrs->code[1] = (*d)["code"].c_str()[1];
+                attrs->code[2] = (*d)["code"].c_str()[2];
+                attrs->code[3] = 0;
+                attrs->category = (*d)["type"];
+                attrs->width = (*d)["invwidth"].at(0) - '0';
+                attrs->height = (*d)["invheight"].at(0) - '0';
+                attrs->stackable = stackable;
+                attrs->useable = useable;
+                attrs->throwable = throwable;
+                attrs->itemLevel = 0;
+                attrs->unusedFlags = 0;
+                attrs->flags = flags;
+                attrs->flags2 = flags2;
+                attrs->qualityLevel = stoi((*d)["level"], nullptr, 10);
+                attrs->magicLevel = 0;
+                ItemAttributeMap[(*d)["code"]] = attrs;
             }
         }
     }
