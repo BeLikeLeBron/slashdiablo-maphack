@@ -242,6 +242,19 @@ string ScreenInfo::FormatTime(time_t t, const char* format) {
 	return szTime;// ss.str();
 }
 
+bool IsKillable(UnitAny* pUnit) {
+	DWORD badMonIds[] = { 151, 152, 157, 158, 203, 227, 268, 269, 283, 289, 290, 291, 292, 313, 314, 315, 316,
+						  317, 318, 319, 320, 331, 339, 340, 341, 342, 343, 344, 351, 352, 353, 354, 356, 357,
+						  358, 363, 364, 377, 378, 392, 393, 410, 411, 412, 413, 415, 416, 417, 418, 419, 420,
+						  421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 560, 561 };
+	for (DWORD n = 0; n < 64; n++)
+	{
+		if (pUnit->dwTxtFileNo == badMonIds[n])
+			return false;
+	}
+	return true;
+}
+
 void ScreenInfo::OnKey(bool up, BYTE key, LPARAM lParam, bool* block) {	
 	for (map<string,Toggle>::iterator it = Toggles.begin(); it != Toggles.end(); it++) {
 		if (key == (*it).second.toggle) {
@@ -526,6 +539,9 @@ void ScreenInfo::OnDraw() {
 	for (Room1* room1 = pUnit->pAct->pRoom1; room1; room1 = room1->pRoomNext) {
 		for (UnitAny* unit = room1->pUnitFirst; unit; unit = unit->pListNext) {
 			if (unit->dwType == UNIT_MONSTER) {
+				if (!IsKillable(unit)) {
+					continue;
+				}
 				if (unit->dwMode == 12) {
 					if (UnitsDead.find(unit->dwUnitId) == UnitsDead.end() && UnitsOverall.find(unit->dwUnitId) != UnitsOverall.end()) {
 						UnitsDead[unit->dwUnitId] = 1;
