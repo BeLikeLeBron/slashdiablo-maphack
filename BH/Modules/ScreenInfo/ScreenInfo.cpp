@@ -242,14 +242,11 @@ string ScreenInfo::FormatTime(time_t t, const char* format) {
 	return szTime;// ss.str();
 }
 
-bool IsKillable(UnitAny* pUnit) {
-	DWORD badMonIds[] = { 151, 152, 157, 158, 203, 227, 268, 269, 283, 289, 290, 291, 292, 313, 314, 315, 316,
-						  317, 318, 319, 320, 331, 339, 340, 341, 342, 343, 344, 351, 352, 353, 354, 356, 357,
-						  358, 363, 364, 377, 378, 392, 393, 410, 411, 412, 413, 415, 416, 417, 418, 419, 420,
-						  421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 560, 561 };
-	for (DWORD n = 0; n < 64; n++)
+bool IsCountable(UnitAny* pUnit) {
+	DWORD badMonIds[] = { 153, 266, 271, 338, 359, 561, 327, 328, 340, 341, 342, 343, 344, 524, 525, 560, 562, 563, 564, 565, 566, 570 };
+	for (DWORD n : badMonIds)
 	{
-		if (pUnit->dwTxtFileNo == badMonIds[n])
+		if (pUnit->dwTxtFileNo == n)
 			return false;
 	}
 	return true;
@@ -538,8 +535,8 @@ void ScreenInfo::OnDraw() {
 	}
 	for (Room1* room1 = pUnit->pAct->pRoom1; room1; room1 = room1->pRoomNext) {
 		for (UnitAny* unit = room1->pUnitFirst; unit; unit = unit->pListNext) {
-			if (unit->dwType == UNIT_MONSTER) {
-				if (!IsKillable(unit)) {
+			if (unit->dwType == UNIT_MONSTER && D2COMMON_GetUnitStat(unit, STAT_LEVEL, 0)) {
+				if (!IsCountable(unit)) {
 					continue;
 				}
 				if (unit->dwMode == 12) {

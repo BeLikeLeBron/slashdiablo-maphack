@@ -1190,9 +1190,6 @@ void InitializeMPQData() {
 				ItemAttributeMap[(*d)["code"]] = attrs;
 			}
 		}
-
-
-
     }
 
     data = MpqDataMap.find("weapons");
