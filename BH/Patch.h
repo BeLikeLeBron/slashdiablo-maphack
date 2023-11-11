@@ -15,7 +15,6 @@ struct Offsets {
 
 class Patch {
 	private:
-		static std::vector<Patch*> Patches;
 		Dll dll;
 		PatchType type;
 		Offsets offsets;

@@ -1,12 +1,10 @@
 #include "Patch.h"
 #include "D2Version.h"
-std::vector<Patch*> Patch::Patches;
 
-Patch::Patch(PatchType type, Dll dll, Offsets offsets, int function, int length) 
+Patch::Patch(PatchType type, Dll dll, Offsets offsets, int function, int length)
 : type(type), dll(dll), offsets(offsets), function(function), length(length) {
 	oldCode = new BYTE[length];
 	injected = false;
-	Patches.push_back(this);
 }
 
 int Patch::GetDllOffset(Dll dll, int offset) {
@@ -61,7 +59,7 @@ bool Patch::Install() {
 
 	//Read the old code to allow proper patch removal
 	ReadProcessMemory(GetCurrentProcess(), (void*)address, oldCode, length, NULL);
-	
+
 	//Set the code with all NOPs by default
 	if (type == 0x68) {
 		memset(code, 0x00, length);
