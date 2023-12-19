@@ -32,7 +32,7 @@ public:
 
 class DrawDirective {
 private:
-	int frameCount;
+	unsigned int frameCount;
 	bool updatePending;
 	AsyncDrawBuffer buffer;
 	bool forcedUpdate;

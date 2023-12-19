@@ -13,8 +13,8 @@ RosterUnit* FindPlayerRoster(DWORD unitId);
 void Print(char* format, ...);
 void PartyPrint(char* format, ...);
 
-CellFile *LoadBmpCellFile(BYTE *buf1, int width, int height);
-CellFile *LoadBmpCellFile(char *filename);
+//CellFile *LoadBmpCellFile(BYTE *buf1, int width, int height);
+//CellFile *LoadBmpCellFile(char *filename);
 CellFile *InitCellFile(CellFile *cf);
 void DeleteCellFile(CellFile *cf);
 
@@ -32,3 +32,4 @@ bool IsTown(DWORD levelId);
 bool IsGameReady();
 DWORD GetPlayerArea();
 int ItemColorFromQuality(unsigned int quality);
+std::string WStringToString(const std::wstring& wstr);

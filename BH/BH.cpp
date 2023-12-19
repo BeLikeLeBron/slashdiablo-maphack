@@ -71,26 +71,6 @@ bool BH::Startup(HINSTANCE instance, VOID* reserved) {
 	return true;
 }
 
-DWORD WINAPI LoadMPQData(VOID* lpvoid){
-	char szFileName[1024];
-	std::string patchPath;
-	UINT ret = GetModuleFileName(NULL, szFileName, 1024);
-	patchPath.assign(szFileName);
-	size_t start_pos = patchPath.rfind("\\");
-	if (start_pos != std::string::npos) {
-		start_pos++;
-		if (start_pos < patchPath.size()){
-			patchPath.replace(start_pos, patchPath.size() - start_pos, "Patch_D2.mpq");
-		}
-	}
-
-	ReadMPQFiles(patchPath);
-	InitializeMPQData();
-	Tables::initTables();
-
-	return 0;
-}
-
 void BH::Initialize()
 {
 	moduleManager = new ModuleManager();
@@ -125,7 +105,9 @@ void BH::Initialize()
 	// Read the MPQ Data asynchronously
 	//CreateThread(0, 0, LoadMPQData, 0, 0, 0);
 	Task::Enqueue([]() -> void {
-		LoadMPQData(NULL);
+		ReadMPQFiles();
+		InitializeMPQData();
+		Tables::initTables();
 		moduleManager->MpqLoaded();
 	});
 

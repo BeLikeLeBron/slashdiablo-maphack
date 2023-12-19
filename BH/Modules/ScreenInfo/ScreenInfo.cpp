@@ -40,7 +40,7 @@ void ScreenInfo::OnLoad() {
 	d2VersionText->SetFont(1);
 
 	if (BH::cGuardLoaded) {
-		Texthook* cGuardText = new Texthook(Perm, 790, 23, "�c4cGuard Loaded");
+		Texthook* cGuardText = new Texthook(Perm, 790, 23, "\377c4cGuard Loaded");
 		cGuardText->SetAlignment(Right);
 	}
 	gameTimer = GetTickCount();
@@ -48,14 +48,17 @@ void ScreenInfo::OnLoad() {
 	szGamesToLevel = "N/A";
 	szTimeToLevel = "N/A";
 	szLastXpGainPer = "N/A";
-	szLastXpGainPer = "N/A";
+	szLastXpPerSec = "N/A";
 	szLastGameTime = "N/A";
 	automap["GAMESTOLVL"] = szGamesToLevel;
 	automap["TIMETOLVL"] = szTimeToLevel;
-	automap["LASTXPPERCENT"] = szLastXpGainPer;
+	automap["LASTXPPERCENTGAINED"] = szLastXpGainPer;
 	automap["LASTXPPERSEC"] = szLastXpPerSec;
 	automap["LASTGAMETIME"] = szLastGameTime;
 	automap["SESSIONGAMECOUNT"] = to_string(nTotalGames);
+	killscounter["total"] = 0;
+	killscounter["unique"] = 0;
+	killscounter["champ"] = 0;
 }
 
 void ScreenInfo::LoadConfig() {
@@ -94,12 +97,15 @@ void ScreenInfo::LoadConfig() {
 	}
 }
 
-void ScreenInfo::MpqLoaded() {
-	mpqVersionText = new Texthook(Perm, 5, 589, MpqVersion);
-	mpqVersionText->SetColor(Gold);
-}
-
-void ScreenInfo::OnGameJoin() {	
+void ScreenInfo::OnGameJoin() {
+	automap["LAST_TOTALKILLED"] = to_string(killscounter["total"]);
+	automap["LAST_UNIQUEKILLED"] = to_string(killscounter["unique"]);
+	automap["LAST_CHAMPKILLED"] = to_string(killscounter["champ"]);
+	UnitsOverall.clear();
+	UnitsDead.clear();
+	killscounter["total"] = 0;
+	killscounter["unique"] = 0;
+	killscounter["champ"] = 0;
 	BnetData* pInfo = (*p_D2LAUNCH_BnData);
 	UnitAny* unit = D2CLIENT_GetPlayerUnit();
 	if (unit) {
@@ -127,7 +133,7 @@ void ScreenInfo::OnGameJoin() {
 
 	gameTimer = GetTickCount();
 	UnitAny* pUnit = D2CLIENT_GetPlayerUnit();
-	startExperience = (int)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
+	startExperience = (DWORD)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
 	if (currentPlayer.compare(0, 16, pUnit->pPlayerData->szName) != 0) {
 		szGamesToLevel = "N/A";
 		szTimeToLevel = "N/A";
@@ -142,7 +148,7 @@ void ScreenInfo::OnGameJoin() {
 	char* szDiff[3] = { "Normal", "Nightmare", "Hell" };
 	currentPlayer = string(pUnit->pPlayerData->szName);
 	startLevel = (int)D2COMMON_GetUnitStat(pUnit, STAT_LEVEL, 0);
-	double startPctExp = ((double)startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
+	double startPctExp = (double)(startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
 
 	time_t t
 		= chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -168,7 +174,9 @@ void ScreenInfo::OnGameJoin() {
 	automap["ACCOUNTNAME"] = pData->szAccountName;
 	automap["CHARNAME"] = pUnit->pPlayerData->szName;
 	automap["SESSIONGAMECOUNT"] = to_string(++nTotalGames);
-
+	automap["TOTALKILLED"] = to_string(killscounter["total"]);
+	automap["UNIQUEKILLED"] = to_string(killscounter["unique"]);
+	automap["CHAMPKILLED"] = to_string(killscounter["champ"]);
 	/*
 	string p = ReplaceAutomapTokens(szSavePath);
 	cRunData = new Config(p + ".dat");
@@ -225,9 +233,23 @@ string ScreenInfo::SimpleGameName(const string& gameName) {
 }
 
 string ScreenInfo::FormatTime(time_t t, const char* format) {
-	stringstream ss;
-	ss << put_time(std::localtime(&t), format);
-	return ss.str();
+	//stringstream ss;
+    struct tm time;
+    CHAR szTime[128] = "";
+    localtime_s(&time, &t);
+    strftime(szTime, sizeof(szTime), format, &time);
+	//ss << put_time(std::localtime(&t), format);
+	return szTime;// ss.str();
+}
+
+bool IsCountable(UnitAny* pUnit) {
+	DWORD badMonIds[] = { 153, 266, 271, 338, 359, 561, 327, 328, 340, 341, 342, 343, 344, 524, 525, 560, 562, 563, 564, 565, 566, 570 };
+	for (DWORD n : badMonIds)
+	{
+		if (pUnit->dwTxtFileNo == n)
+			return false;
+	}
+	return true;
 }
 
 void ScreenInfo::OnKey(bool up, BYTE key, LPARAM lParam, bool* block) {	
@@ -368,11 +390,12 @@ void ScreenInfo::OnDraw() {
 		int startedBaal = D2COMMON_GetQuestFlag2(quests, EVE_OF_DESTRUCTION, QFLAG_QUEST_STARTED) | D2COMMON_GetQuestFlag2(quests, EVE_OF_DESTRUCTION, QFLAG_QUEST_LEAVE_TOWN);
 
 		int warning = -1;
-		if (doneDuriel && startedMephisto && !doneMephisto && !MephistoBlocked) {
+		int CurrentAct = D2CLIENT_GetPlayerUnit()->dwAct;
+		if (doneDuriel && startedMephisto && !doneMephisto && !MephistoBlocked && CurrentAct == 2) {
 			warning = 0;
-		} else if (doneMephisto && startedDiablo && !doneDiablo && !DiabloBlocked) {
+		} else if (doneMephisto && startedDiablo && !doneDiablo && !DiabloBlocked && CurrentAct == 3) {
 			warning = 1;
-		} else if (xpac && doneDiablo && startedBaal && !doneBaal && !BaalBlocked) {
+		} else if (xpac && doneDiablo && startedBaal && !doneBaal && !BaalBlocked && CurrentAct == 4) {
 			warning = 2;
 		}
 		if (warning >= 0) {
@@ -387,15 +410,15 @@ void ScreenInfo::OnDraw() {
 	}	
 
 	UnitAny* pUnit = D2CLIENT_GetPlayerUnit();
-	currentExperience = (int)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
+	currentExperience = (DWORD)D2COMMON_GetUnitStat(pUnit, STAT_EXP, 0);
 	currentLevel = (int)D2COMMON_GetUnitStat(pUnit, STAT_LEVEL, 0);
 
 	endTimer = ((GetTickCount() - gameTimer) / 1000);
 	if (startLevel == 0) { startLevel = currentLevel; }
 
 	char sExp[255] = { 0 };
-	double oldPctExp = ((double)startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
-	double pExp = ((double)currentExperience - ExpByLevel[currentLevel - 1]) / (ExpByLevel[currentLevel] - ExpByLevel[currentLevel - 1]) * 100.0;
+	double oldPctExp = (double)(startExperience - ExpByLevel[startLevel - 1]) / (ExpByLevel[startLevel] - ExpByLevel[startLevel - 1]) * 100.0;
+	double pExp = (double)(currentExperience - ExpByLevel[currentLevel - 1]) / (ExpByLevel[currentLevel] - ExpByLevel[currentLevel - 1]) * 100.0;
 	currentExpGainPct = pExp - oldPctExp;
 	if (currentLevel > startLevel) {
 		currentExpGainPct = (100 - oldPctExp) + pExp + ((currentLevel - startLevel) - 1) * 100;
@@ -473,8 +496,8 @@ void ScreenInfo::OnDraw() {
 			CellContext buffContext = {};
 			buffContext.nCellNo = activeBuffs[i].index;
 			buffContext.pCellFile = cf;
-			int x = activeBuffs[i].isBuff ? buffX : debuffX;
-			int y = activeBuffs[i].isBuff ? buffY : debuffY;
+			unsigned int x = activeBuffs[i].isBuff ? buffX : debuffX;
+			unsigned int y = activeBuffs[i].isBuff ? buffY : debuffY;
 			int col = activeBuffs[i].isBuff ? 3 : 1; //3=Blue, 1=Red;
 			D2GFX_DrawCellContextEx(&buffContext, x, y, -1, DRAW_MODE_NORMAL, col);
 			if (mouseX > x && mouseX < x + cf->cells[0]->width && mouseY > y - cf->cells[0]->height && mouseY < y) {
@@ -510,6 +533,28 @@ void ScreenInfo::OnDraw() {
 	} else {
 		areaLevel = levelTxt->wMonLvl[D2CLIENT_GetDifficulty()];
 	}
+	for (Room1* room1 = pUnit->pAct->pRoom1; room1; room1 = room1->pRoomNext) {
+		for (UnitAny* unit = room1->pUnitFirst; unit; unit = unit->pListNext) {
+			if (unit->dwType == UNIT_MONSTER && D2COMMON_GetUnitStat(unit, STAT_LEVEL, 0)) {
+				if (!IsCountable(unit)) {
+					continue;
+				}
+				if (unit->dwMode == 12) {
+					if (UnitsDead.find(unit->dwUnitId) == UnitsDead.end() && UnitsOverall.find(unit->dwUnitId) != UnitsOverall.end()) {
+						UnitsDead[unit->dwUnitId] = 1;
+						killscounter["total"]++;
+						if (unit->pMonsterData->fChamp)
+							killscounter["champ"]++;
+						else if (unit->pMonsterData->fBoss)
+							killscounter["unique"]++;
+					}
+				}
+				else {
+					UnitsOverall[unit->dwUnitId] = 1;
+				}
+			}
+		}
+	}
 
 	automap["CURRENTCHARLEVEL"] = to_string(currentLevel);
 	automap["CURRENTCHARLEVELPERCENT"] = to_string(static_cast<double>(currentLevel) + (pExp / 100.0));
@@ -521,6 +566,9 @@ void ScreenInfo::OnDraw() {
 	automap["REALTIME"] = szTime;
 	automap["AREALEVEL"] = to_string(areaLevel);
 	aPlayerCountAverage[GetPlayerCount() - 1]++;
+	automap["TOTALKILLED"] = to_string(killscounter["total"]);
+	automap["UNIQUEKILLED"] = to_string(killscounter["unique"]);
+	automap["CHAMPKILLED"] = to_string(killscounter["champ"]);
 
 	delete [] level;	
 	
@@ -547,7 +595,7 @@ void ScreenInfo::FormattedXPPerSec(char* buffer, double xpPerSec) {
 		xpPerSec /= 1E3;
 		unit = "K";
 	}
-	sprintf(buffer, "%s%.2f%s/s", xpPerSec >= 0 ? "+" : "", xpPerSec, unit);
+	sprintf_s(buffer, 128, "%s%.2f%s/s", xpPerSec >= 0 ? "+" : "", xpPerSec, unit);
 }
 
 std::string ScreenInfo::ReplaceAutomapTokens(std::string& v) {
@@ -681,7 +729,7 @@ void ScreenInfo::OnGameExit() {
 	double lastExpGainPct = currentExpGainPct;
 	double lastExpPerSecond = currentExpPerSecond;
 	int lastGameLength = endTimer;
-	int timeToLevel = gamesToLevel * lastGameLength;
+	int timeToLevel = (int)(gamesToLevel * lastGameLength);
 
 	char buffer[128];
 	sprintf_s(buffer, sizeof(buffer), "%.2f", gamesToLevel);
@@ -939,7 +987,7 @@ StateCode StateCodes[] = {
 	{"FADE", 159}
 };
 
-long long ExpByLevel[] = {
+DWORD ExpByLevel[] = {
 	0,
 	500,
 	1500,
@@ -1040,7 +1088,7 @@ long long ExpByLevel[] = {
 	3229426756,
 	3520485254,
 	3837739017,
-	9999999999
+	4294967295
 };
 
 StateCode GetStateCode(unsigned int nKey) {

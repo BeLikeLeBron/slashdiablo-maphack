@@ -110,7 +110,7 @@ void Framehook::OnDraw() {
 		return;
 
 	Lock();
-	RECT pRect  = {GetX(), GetY(), GetX() + GetXSize(), GetY() + GetYSize()};
+	RECT pRect  = {static_cast<long>(GetX()), static_cast<long>(GetY()), static_cast<long>(GetX() + GetXSize()), static_cast<long>(GetY() + GetYSize())};
 	D2GFX_DrawRectangle(GetX(), GetY(), GetX() + GetXSize(), GetY() + GetYSize(), GetColor(), GetTransparency());
 	Framehook::DrawRectStub(&pRect);
 	Unlock();
@@ -145,7 +145,7 @@ bool Framehook::OnRightClick(bool up, unsigned int x, unsigned int y) {
 }
 
 bool Framehook::Draw(unsigned int x, unsigned int y, unsigned int xSize, unsigned int ySize, unsigned int color, BoxTrans trans) {
-	RECT pRect  = {x, y, x + xSize, y + ySize};
+	RECT pRect  = { static_cast<long>(x), static_cast<long>(y), static_cast<long>(x + xSize), static_cast<long>(y + ySize)};
 	D2GFX_DrawRectangle(x, y, x + xSize, y + ySize, color, trans);
 	Framehook::DrawRectStub(&pRect);
 	return true;

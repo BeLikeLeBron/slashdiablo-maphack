@@ -186,7 +186,7 @@ POINT Texthook::GetTextSize(string text, unsigned int font) {
 	DWORD oldFont = D2WIN_SetTextSize(font);
 	D2WIN_GetTextWidthFileNo(wString, &width, &fileNo);
 	D2WIN_SetTextSize(oldFont);
-	POINT point = {width, height[font]};
+	POINT point = { static_cast<long>(width), static_cast<long>(height[font])};
 	delete[] wString;
 	return point;
 }
@@ -197,7 +197,7 @@ POINT Texthook::GetTextSize(wchar_t* text, unsigned int font) {
 	DWORD oldFont = D2WIN_SetTextSize(font);
 	D2WIN_GetTextWidthFileNo(text, &width, &fileNo);
 	D2WIN_SetTextSize(oldFont);
-	POINT point = { width, height[font] };
+	POINT point = { static_cast<long>(width), static_cast<long>(height[font]) };
 	return point;
 }
 

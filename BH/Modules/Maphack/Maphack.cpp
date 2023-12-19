@@ -175,6 +175,7 @@ void Maphack::ReadConfig() {
 	BH::config->ReadToggle("Show Automap On Join", "None", false, Toggles["Show Automap On Join"]);
 	BH::config->ReadToggle("Skip NPC Quest Messages", "None", true, Toggles["Skip NPC Quest Messages"]);
 
+	BH::config->ReadToggle("Show Normal Monsters", "None", true, Toggles["Show Normal Monsters"]);
 	BH::config->ReadInt("Minimap Max Ghost", automapDraw.maxGhost);
 }
 
@@ -263,6 +264,8 @@ void Maphack::OnLoad() {
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Monster Resistances"].state, "  Resistances");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Monster Resistances"].toggle, "");
 	
+	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Show Normal Monsters"].state, "  Normal Monsters");
+	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Show Normal Monsters"].toggle, "");
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Show Missiles"].state, "Show Missiles");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Show Missiles"].toggle, "");
 
@@ -284,11 +287,11 @@ void Maphack::OnLoad() {
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Display Level Names"].state, "Level Names");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Display Level Names"].toggle, "");
 
-	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply CPU Patch"].state, "CPU Patch");
-	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply CPU Patch"].toggle, "");
+	//new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply CPU Patch"].state, "CPU Patch");
+	//new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply CPU Patch"].toggle, "");
 
-	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply FPS Patch"].state, "FPS Patch (SP Only)");
-	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply FPS Patch"].toggle, "");
+	//new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Apply FPS Patch"].state, "FPS Patch (SP Only)");
+	//new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Apply FPS Patch"].toggle, "");
 
 	new Checkhook(settingsTab, 4, (Y += 15), &Toggles["Show Automap On Join"].state, "Show Automap On Join");
 	new Keyhook(settingsTab, keyhook_x, (Y + 2), &Toggles["Show Automap On Join"].toggle, "");
@@ -369,10 +372,10 @@ void Maphack::OnLoop() {
 			RevealGame();
 		break;
 		case MaphackRevealAct:
-			RevealAct(unit->pAct->dwAct + 1);
+			RevealAct(D2CLIENT_GetPlayerUnit()->pAct->dwAct + 1);
 		break;
 		case MaphackRevealLevel:
-			RevealLevel(unit->pPath->pRoom1->pRoom2->pLevel);
+			RevealLevel(D2CLIENT_GetPlayerUnit()->pPath->pRoom1->pRoom2->pLevel);
 		break;
 	}
 }
@@ -382,7 +385,7 @@ bool IsObjectChest(ObjectTxt *obj)
 	//ObjectTxt *obj = D2COMMON_GetObjectTxt(objno);
 	return (obj->nSelectable0 && (
 		(obj->nOperateFn == 1) || //bed, undef grave, casket, sarc
-		(obj->nOperateFn == 3) || //basket, urn, rockpile, trapped soul
+		//(obj->nOperateFn == 3) || //basket, urn, rockpile, trapped soul
 		(obj->nOperateFn == 4) || //chest, corpse, wooden chest, buriel chest, skull and rocks, dead barb
 		(obj->nOperateFn == 5) || //barrel
 		(obj->nOperateFn == 7) || //exploding barrel
@@ -395,9 +398,6 @@ bool IsObjectChest(ObjectTxt *obj)
 		(obj->nOperateFn == 68)    //evil urn
 		));
 }
-
-BYTE nChestClosedColour = 0x09;
-BYTE nChestLockedColour = 0x09;
 
 Act* lastAct = NULL;
 
@@ -414,7 +414,7 @@ void Maphack::OnDraw() {
 		for (UnitAny* unit = room1->pUnitFirst; unit; unit = unit->pListNext) {
 			if (unit->dwType == UNIT_ITEM && (unit->dwFlags & UNITFLAG_NO_EXPERIENCE) == 0x0) {
 				DWORD dwFlags = unit->pItemData->dwFlags;
-				UnitItemInfo uInfo;
+				UnitItemInfo uInfo{};
 				uInfo.item = unit;
 				uInfo.itemCode[0] = D2COMMON_GetItemText(unit->dwTxtFileNo)->szCode[0];
 				uInfo.itemCode[1] = D2COMMON_GetItemText(unit->dwTxtFileNo)->szCode[1];
@@ -510,6 +510,10 @@ void Maphack::OnAutomapDraw() {
 						continue;
 					}
 
+					if (!Toggles["Show Normal Monsters"].state && !unit->pMonsterData->fBoss && !unit->pMonsterData->fChamp && !unit->pMonsterData->fMinion) {
+						continue;
+					}
+
 					// User can make it draw lines to monsters
 					if (automapMonsterLines.find(unit->dwTxtFileNo) != automapMonsterLines.end() ) {
 						lineColor = automapMonsterLines[unit->dwTxtFileNo];
@@ -568,6 +572,7 @@ void Maphack::OnAutomapDraw() {
 					if (unit->pMonsterData->fSuperUniq &&
 						automapSuperUniqueColors.find(unit->pMonsterData->wUniqueNo) != automapSuperUniqueColors.end()) {
 						color = automapSuperUniqueColors[unit->pMonsterData->wUniqueNo];
+						lineColor = automapSuperUniqueColors[unit->pMonsterData->wUniqueNo];
 					}
 
 					// auras has highest predence
@@ -624,7 +629,7 @@ void Maphack::OnAutomapDraw() {
 					});
 				}
 				else if (unit->dwType == UNIT_ITEM && (unit->dwFlags & UNITFLAG_REVEALED) == UNITFLAG_REVEALED) {
-					UnitItemInfo uInfo;
+					UnitItemInfo uInfo{};
 					uInfo.item = unit;
 					uInfo.itemCode[0] = D2COMMON_GetItemText(unit->dwTxtFileNo)->szCode[0];
 					uInfo.itemCode[1] = D2COMMON_GetItemText(unit->dwTxtFileNo)->szCode[1];
@@ -800,7 +805,7 @@ void Maphack::OnGamePacketRecv(BYTE *packet, bool *block) {
 			BYTE Count = packet[1];
 			DWORD Id = *(DWORD*)&packet[2];
 			for(DWORD i = 0;i < Count;i++) {
-				BaseSkill S;
+				BaseSkill S{};
 				S.Skill = *(WORD*)&packet[6+(3*i)];
 				S.Level = *(BYTE*)&packet[8+(3*i)];
 				Skills[Id].push_back(S);
@@ -873,14 +878,15 @@ void Maphack::RevealAct(int act) {
 
 void Maphack::RevealLevel(Level* level) {
 	// Basic sanity checks to ensure valid level
-	if (!level || level->dwLevelNo < 0 || level->dwLevelNo > 255)
+	int LevelNo = level->dwLevelNo;
+	if (!level || LevelNo < 0 || LevelNo > 255)
 		return;
 
 	// Check if the level has been previous revealed.
-	if (revealedLevel[level->dwLevelNo])
+	if (revealedLevel[LevelNo])
 		return;
 
-	InitLayer(level->dwLevelNo);
+	InitLayer(LevelNo);
 
 	// Iterate every room in the level.
 	for(Room2* room = level->pRoom2First; room; room = room->pRoom2Next) {
@@ -907,7 +913,7 @@ void Maphack::RevealLevel(Level* level) {
 			D2COMMON_RemoveRoomData(level->pMisc->pAct, level->dwLevelNo, room->dwPosX, room->dwPosY, room->pRoom1);
 	}
 
-	revealedLevel[level->dwLevelNo] = true;
+	revealedLevel[LevelNo] = true;
 }
 
 void Maphack::RevealRoom(Room2* room) {
@@ -932,7 +938,7 @@ void Maphack::RevealRoom(Room2* room) {
 				cellNo = 318;
 
 			// Countess Chest Check
-			if (preset->dwTxtFileNo == 371) 
+			else if (preset->dwTxtFileNo == 371) 
 				cellNo = 301;
 			// Act 2 Orifice Check
 			else if (preset->dwTxtFileNo == 152) 
@@ -941,10 +947,10 @@ void Maphack::RevealRoom(Room2* room) {
 			else if (preset->dwTxtFileNo == 460) 
 				cellNo = 1468; 
 			// Canyon / Arcane Waypoint Check
-			if ((preset->dwTxtFileNo == 402) && (room->pLevel->dwLevelNo == 46))
+			else if ((preset->dwTxtFileNo == 402) && (room->pLevel->dwLevelNo == 46))
 				cellNo = 0;
 			// Hell Forge Check
-			if (preset->dwTxtFileNo == 376)
+			else if (preset->dwTxtFileNo == 376)
 				cellNo = 376;
 
 			// If it isn't special, check for a preset.

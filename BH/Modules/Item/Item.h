@@ -56,9 +56,9 @@ class Item : public Module {
 	private:
 		static map<std::string, Toggle> Toggles;
 		static unordered_set<string> no_ilvl_codes;
-		unsigned int showPlayer;
+		unsigned int showPlayer{};
 		static UnitAny* viewingUnit;
-		Drawing::UITab* settingsTab;
+		Drawing::UITab* settingsTab{};
 		static unsigned int filterLevelSetting;
 		static unsigned int pingLevelSetting;
 		static unsigned int trackerPingLevelSetting;

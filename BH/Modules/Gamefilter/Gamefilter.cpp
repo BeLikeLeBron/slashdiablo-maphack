@@ -4,6 +4,7 @@
 #include "../../D2Stubs.h"
 #include <sstream>
 #include "../../BH.h"
+#include "../../D2Helpers.h"
 
 using namespace std;
 
@@ -77,7 +78,7 @@ void Gamefilter::OnRealmPacketRecv(BYTE* pPacket, bool* blockPacket) {
 	if(pPacket[0] == 0x05 && filterBox)
 	{		
 		wstring wFilter(filterBox->wText);
-		string sFilter(wFilter.begin(), wFilter.end());
+		string sFilter = WStringToString(wFilter);
 
 		GameListEntry* pEntry = new GameListEntry;
 
@@ -199,7 +200,7 @@ BOOL __stdcall Gamefilter::Filterbox_InputHandler(Control* pControl, DWORD dwLen
 {
 	wstring wInput(pControl->wText);
 
-	string sFilter(wInput.begin(), wInput.end());
+	string sFilter = WStringToString(wInput);
 
 	if(dwLength > 0)
 		sFilter+=*pChar;

@@ -173,7 +173,7 @@ void PartyPrint(char* format, ...)
 
 	delete[] str;
 }
-
+/*
 CellFile *LoadBmpCellFile(BYTE *buf1, int width, int height)
 {
 	BYTE *buf2 = new BYTE[(width*height * 2) + height], *dest = buf2;
@@ -212,7 +212,7 @@ CellFile *LoadBmpCellFile(char *filename)
 	delete buf1;
 
 	return (CellFile *)ret;
-}
+}*/
 
 CellFile *InitCellFile(CellFile *cf)
 {
@@ -330,4 +330,13 @@ DWORD GetPlayerArea() {
 	if (!IsGameReady())
 		return 0;
 	return player->pPath->pRoom1->pRoom2->pLevel->dwLevelNo;
+}
+
+std::string WStringToString(const std::wstring& wstr)
+{
+	std::string str;
+	size_t size;
+	str.resize(wstr.length());
+	wcstombs_s(&size, &str[0], str.size() + 1, wstr.c_str(), wstr.size());
+	return str;
 }

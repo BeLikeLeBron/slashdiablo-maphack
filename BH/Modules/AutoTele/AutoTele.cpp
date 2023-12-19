@@ -141,7 +141,7 @@ void AutoTele::OnLoop() {
 		if(SetTele) {
 			if(!SetSkill(0x36, 0)) {	//0x36 is teleport
 				TPath.RemoveAll();
-				PrintText(1, "ÿc4AutoTele:ÿc1 Failed to set teleport!");
+				PrintText(1, "\377c4AutoTele:\377c1 Failed to set teleport!");
 			}
 			_timer = GetTickCount();
 			SetTele = 0;
@@ -153,12 +153,12 @@ void AutoTele::OnLoop() {
 			if(TeleActive) {
 				TeleActive = 0;
 				TPath.RemoveAll();
-				PrintText(1, "ÿc4AutoTele:ÿc1 Aborting teleport, deselected teleport");
+				PrintText(1, "\377c4AutoTele:\377c1 Aborting teleport, deselected teleport");
 				return;
 			}
 			if((GetTickCount() - _timer) > 1000) {
 				TPath.RemoveAll();
-				PrintText(1, "ÿc4AutoTele:ÿc1 Failed to set teleport skill. Ping: %d", *p_D2CLIENT_Ping);
+				PrintText(1, "\377c4AutoTele:\377c1 Failed to set teleport skill. Ping: %d", *p_D2CLIENT_Ping);
 				return;
 			}
 			return;
@@ -175,7 +175,7 @@ void AutoTele::OnLoop() {
 
 		if((GetTickCount() - _timer2) > 500) {
 			if(Try >= 5) {
-				PrintText(1, "ÿc4AutoTele:ÿc1 Failed to teleport after 5 tries");
+				PrintText(1, "\377c4AutoTele:\377c1 Failed to teleport after 5 tries");
 				TPath.RemoveAll();
 				Try = 0;
 				DoInteract = 0;
@@ -379,7 +379,7 @@ void AutoTele::ManageTele(Vector T) {
 	}
 
 	if(!T.Id) {
-		PrintText(1, "ÿc4AutoTele:ÿc1 Invalid destination");
+		PrintText(1, "\377c4AutoTele:\377c1 Invalid destination");
 		return;
 	}
 
@@ -415,7 +415,7 @@ void AutoTele::ManageTele(Vector T) {
 				} else DoInteract = 0;
 
 				int nodes = MakePath(ExitArray[i]->ptPos.x, ExitArray[i]->ptPos.y, Areas, AreaCount, ExitArray[i]->dwType == EXIT_LEVEL ? 1: 0);
-				PrintText(1, "ÿc4AutoTele:ÿc1 Going to %s, %d nodes.", lvltext->szName, nodes);
+				PrintText(1, "\377c4AutoTele:\377c1 Going to %s, %d nodes.", lvltext->szName, nodes);
 				break;
 			}
 		}
@@ -425,11 +425,11 @@ void AutoTele::ManageTele(Vector T) {
 	if(T.dwType == XY) {
 		DoInteract = 0;
 		if(!T.Id || !T.Id2) {
-			PrintText(1, "ÿc4AutoTele:ÿc1 No X/Y value found");
+			PrintText(1, "\377c4AutoTele:\377c1 No X/Y value found");
 			return;
 		}
 		int nodes = MakePath(T.Id, T.Id2, Areas, AreaCount, 0);
-		PrintText(1, "ÿc4AutoTele:ÿc1 Going to X: %d, Y: %d, %d nodes", T.Id, T.Id2, nodes);
+		PrintText(1, "\377c4AutoTele:\377c1 Going to X: %d, Y: %d, %d nodes", T.Id, T.Id2, nodes);
 		return;
 	}
 
@@ -451,13 +451,13 @@ void AutoTele::ManageTele(Vector T) {
 		if(nodes = MakePath(PresetUnit.x,PresetUnit.y, Areas, AreaCount, 0)) {
 			if(T.dwType == UNIT_OBJECT) {
 				ObjectTxt * ObjTxt = D2COMMON_GetObjectTxt(T.Id);
-				PrintText(1, "ÿc4AutoTele:ÿc1 Going to %s, %d nodes", ObjTxt->szName, nodes);
+				PrintText(1, "\377c4AutoTele:\377c1 Going to %s, %d nodes", ObjTxt->szName, nodes);
 			}
 			InteractType = T.dwType;
 		}
 		else return;
 	} else {
-		PrintText(1, "ÿc4AutoTele:ÿc1 Can't find object");
+		PrintText(1, "\377c4AutoTele:\377c1 Can't find object");
 		return;
 	}
 }

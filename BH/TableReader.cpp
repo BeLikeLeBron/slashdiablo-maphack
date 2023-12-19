@@ -185,7 +185,7 @@ bool TableReader::loadMPQData(std::string archiveName, Table &table)
 {
 	std::transform(archiveName.begin(), archiveName.end(), archiveName.begin(), ::tolower);
 	MPQData* mpq = MpqDataMap[archiveName];
-	if (!mpq || mpq->error) return false;
+	if (!mpq) return false;
 	for (auto iter = mpq->data.begin(); iter != mpq->data.end(); iter++){
 		auto entry = *iter;
 		JSONObject *obj = new JSONObject();

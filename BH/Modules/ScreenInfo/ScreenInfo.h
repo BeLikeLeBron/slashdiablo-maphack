@@ -72,6 +72,9 @@ class ScreenInfo : public Module {
 
 		map<string, string> automap;
 		map<string, int> runcounter;
+		map<string, int> killscounter;
+		map<DWORD, int> UnitsOverall;
+		map<DWORD, int> UnitsDead;
 		vector<pair<string, string>> runDetailsColumns;
 		map<string, unsigned int> runs;
 
@@ -98,7 +101,6 @@ class ScreenInfo : public Module {
 
 		void OnLoad();
 		void LoadConfig();
-		void MpqLoaded();
 		void OnKey(bool up, BYTE key, LPARAM lParam, bool* block);
 		void OnGameJoin();
 		void OnGameExit();
@@ -120,4 +122,4 @@ class ScreenInfo : public Module {
 
 StateCode GetStateCode(unsigned int nKey);
 StateCode GetStateCode(const char* name);
-long long ExpByLevel[];
+DWORD ExpByLevel[];

@@ -77,7 +77,7 @@
 		f##Asm_##dll##_##name## = Patch::GetDllOffset(dll, address); \
 		} \
 		return &##f##Asm_##dll##_##name; \
-	} 
+	}
 
 #define VARPTR(dll, name, type, ...) \
 	type** Var_##dll##_##name##(VOID) \
@@ -90,7 +90,7 @@
 		f##Var_##dll##_##name## = Patch::GetDllOffset(dll, address); \
 		} \
 		return (type**)&##f##Var_##dll##_##name; \
-	} 
+	}
 
 #else
 #define FUNCPTR(dll, name, callingret, args, ...) extern callingret dll##_##name##args;
@@ -185,7 +185,7 @@ VARPTR(D2CLIENT, MouseOffsetX, int, 0x119960, 0x106844)
 VARPTR(D2CLIENT, AutomapOn, DWORD, 0xFADA8, 0x11C8B8)
 VARPTR(D2CLIENT, AutomapMode, int, 0xF16B0, 0xF34F8)
 VARPTR(D2CLIENT, Offset, POINT, 0x11C1F8, 0x11CF5C)
-VARPTR(D2CLIENT, xShake, int, 0x11BF00, 0x11CA6C) //ScreenShake	
+VARPTR(D2CLIENT, xShake, int, 0x11BF00, 0x11CA6C) //ScreenShake
 VARPTR(D2CLIENT, yShake, int, 0x10B9DC, 0xFC3DC) //ScreenShake
 VARPTR(D2CLIENT, AutomapLayer, AutomapLayer*, 0x11C1C4, 0x11CF28)
 
@@ -329,7 +329,7 @@ FUNCPTR(D2COMMON, GetObjectText, ObjectTxt * __stdcall, (DWORD objno), -10688, -
 FUNCPTR(D2COMMON, GetItemText, ItemText *__stdcall, (DWORD dwItemNo), -10695, -10994)
 
 FUNCPTR(D2COMMON, GetLayer, AutomapLayer2* __fastcall, (DWORD dwLevelNo), -10749, -10087)
-FUNCPTR(D2COMMON, GetLevel, Level * __fastcall, (ActMisc *pMisc, DWORD dwLevelNo), -10207, -10287)
+FUNCPTR(D2COMMON, GetLevel, Level * __fastcall, (ActMisc *pMisc, DWORD dwLevelNo), -10207, -10283)
 
 FUNCPTR(D2COMMON, GetStatList, StatList* __stdcall, (UnitAny* pUnit, DWORD dwUnk, DWORD dwMaxEntries ), -10930, -10449)
 FUNCPTR(D2COMMON, CopyStatList, DWORD __stdcall, (StatList* pStatList, Stat* pStatArray, DWORD dwMaxEntries), -10658, -10195)
@@ -418,7 +418,7 @@ FUNCPTR(D2GFX, DrawRectangle, void __stdcall, (int X1, int Y1, int X2, int Y2, D
 FUNCPTR(D2GFX, DrawAutomapCell2, void __stdcall, (CellContext* context, DWORD xpos, DWORD ypos, DWORD bright2, DWORD bright, BYTE *coltab), -10041, -10042)
 FUNCPTR(D2GFX, DrawCellContextEx, void __stdcall, (CellContext *context, int Xpos, int Ypos, int dwl, int nTransLvl, BYTE Color), -10019, -10067)
 
-FUNCPTR(D2GFX, GetScreenSize, DWORD __stdcall, (void), -10031, -10012) 
+FUNCPTR(D2GFX, GetScreenSize, DWORD __stdcall, (void), -10031, -10012)
 
 FUNCPTR(D2GFX, GetHwnd, HWND __stdcall, (void), -10048, -10007)
 
@@ -487,6 +487,10 @@ VARPTR(D2LAUNCH, BnData, BnetData *, 0x25ABC, 0x25B30)
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
+FUNCPTR(FOG, mpqOpenFile, uint32_t __fastcall, (char* path, void** buffer), -10102, -10102)
+FUNCPTR(FOG, mpqCloseFile, uint32_t __fastcall, (void* mpq_file), -10103, -10103)
+FUNCPTR(FOG, mpqReadFile, uint32_t __fastcall, (void* mpq_file, uint8_t* buffer, uint32_t nb_to_read, uint32_t* nb_read, int, int, int), -10104, -10104)
+FUNCPTR(FOG, mpqGetFileSize, uint32_t __fastcall, (void* mpq_file, uintptr_t* to_reset), -10105, -10105)
 // D2Win Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////
 

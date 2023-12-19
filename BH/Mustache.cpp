@@ -175,7 +175,7 @@ namespace Mustache{
 		}
 
 		~SectionTemplate(){
-			contents.empty();
+			contents.clear();
 		}
 
 		std::string render(Context &ctx){
@@ -409,7 +409,7 @@ namespace Mustache{
 		}
 
 		~RootTemplate(){
-			templs.empty();
+			templs.clear();
 		}
 
 		std::string render(Context &ctx){
