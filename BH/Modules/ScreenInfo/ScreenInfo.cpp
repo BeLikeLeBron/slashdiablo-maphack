@@ -690,7 +690,7 @@ void ScreenInfo::OnGameExit() {
 	sprintf_s(buffer, sizeof(buffer), "%d:%.2d:%.2d", timeToLevel / 3600, (timeToLevel / 60) % 60, timeToLevel % 60);
 	szTimeToLevel = string(buffer);
 
-	sprintf_s(buffer, sizeof(buffer), "%s%00.2f%%", lastExpGainPct >= 0 ? "+" : "", lastExpGainPct);
+	sprintf_s(buffer, sizeof(buffer), "%s%00.4f%%", lastExpGainPct >= 0 ? "+" : "", lastExpGainPct);
 	szLastXpGainPer = string(buffer);
 
 	FormattedXPPerSec(buffer, lastExpPerSecond);
