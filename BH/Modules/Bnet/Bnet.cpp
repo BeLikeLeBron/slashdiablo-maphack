@@ -3,9 +3,14 @@
 #include "../../BH.h"
 
 unsigned int Bnet::failToJoin;
+std::string Bnet::DefaultGame;
+std::string Bnet::DefaultPassword;
+
+
 std::string Bnet::lastName;
 std::string Bnet::lastPass;
 std::string Bnet::lastDesc;
+std::string Bnet::defaultGsString;
 std::regex Bnet::reg = std::regex("^(.*?)(\\d+)$");
 
 // Fixes Unrecoverable internal error 6FF61787
@@ -26,7 +31,7 @@ Patch* removePass = new Patch(Call, D2MULTI, { 0x1250, 0x1AD0 }, (int)RemovePass
 void Bnet::OnLoad() {
 	showLastGame = &bools["Autofill Last Game"];
 	*showLastGame = true;
-	
+
 	showLastPass = &bools["Autofill Last Password"];
 	*showLastPass = true;
 
@@ -35,6 +40,9 @@ void Bnet::OnLoad() {
 
 	keepDesc = &bools["Autofill Description"];
 	*keepDesc = true;
+
+	defaultGsIndex = &ints["Default Gs"];
+	*defaultGsIndex = 0;
 
 	failToJoin = 4000;
 	LoadConfig();
@@ -46,6 +54,10 @@ void Bnet::LoadConfig() {
 	BH::config->ReadBoolean("Autofill Next Game", *nextInstead);
 	BH::config->ReadBoolean("Autofill Description", *keepDesc);
 	BH::config->ReadInt("Fail To Join", failToJoin);
+	BH::config->ReadInt("Default Gs", *defaultGsIndex);
+	defaultGsString = "gs" + std::to_string(*defaultGsIndex + 1);
+	BH::config->ReadString("Default Game Name", DefaultGame);
+	BH::config->ReadString("Default Password", DefaultPassword);
 
 	InstallPatches();
 }
@@ -92,15 +104,15 @@ void Bnet::OnUnload() {
 }
 
 void Bnet::OnGameJoin() {
-	if ( strlen((*p_D2LAUNCH_BnData)->szGameName) > 0)
+	if (strlen((*p_D2LAUNCH_BnData)->szGameName) > 0)
 		lastName = (*p_D2LAUNCH_BnData)->szGameName;
 
-	if ( strlen((*p_D2LAUNCH_BnData)->szGamePass) > 0)
+	if (strlen((*p_D2LAUNCH_BnData)->szGamePass) > 0)
 		lastPass = (*p_D2LAUNCH_BnData)->szGamePass;
 	else
 		lastPass = "";
-	
-	if ( strlen((*p_D2LAUNCH_BnData)->szGameDesc) > 0)
+
+	if (strlen((*p_D2LAUNCH_BnData)->szGameDesc) > 0)
 		lastDesc = (*p_D2LAUNCH_BnData)->szGameDesc;
 	else
 		lastDesc = "";
@@ -127,10 +139,12 @@ void Bnet::OnGameExit() {
 					}
 					if (countLength > maxCountLength) {
 						count = 1;
-					} else {
+					}
+					else {
 						count++;
 					}
-				} else {
+				}
+				else {
 					count++;
 				}
 				char buffer[16];
@@ -151,39 +165,61 @@ DWORD __stdcall Bnet::BnetLobbyAdBlockPatch(DWORD a1) {
 	return 1;
 }
 
-VOID __fastcall Bnet::NextGamePatch(Control* box, BOOL (__stdcall *FunCallBack)(Control*, DWORD, DWORD)) {
-	if (Bnet::lastName.size() == 0)
-		return;
+VOID __fastcall Bnet::NextGamePatch(Control* box, BOOL(__stdcall* FunCallBack)(Control*, DWORD, DWORD)) {
+	wchar_t* wszLastGameName = nullptr; // Ensure it's initialized to nullptr
 
-	wchar_t *wszLastGameName = AnsiToUnicode(Bnet::lastName.c_str());
+	if (Bnet::lastName.size() > 0) {
+		// Type in the game name from last game if available
+		wszLastGameName = AnsiToUnicode(Bnet::lastName.c_str());
+	}
+	else {
+		// TBD Input the default game name
+		wszLastGameName = AnsiToUnicode(Bnet::GetDefaultGamename().c_str());
+	}
 
 	D2WIN_SetControlText(box, wszLastGameName);
 	D2WIN_SelectEditBoxText(box);
 
 	// original code
 	D2WIN_SetEditBoxProc(box, FunCallBack);
-	delete [] wszLastGameName;
+	delete[] wszLastGameName;
 }
 
-VOID __fastcall Bnet::NextPassPatch(Control* box, BOOL(__stdcall *FunCallBack)(Control*, DWORD, DWORD)) {
-	if (Bnet::lastPass.size() == 0)
-		return;
-	wchar_t *wszLastPass = AnsiToUnicode(Bnet::lastPass.c_str());
-	
+VOID __fastcall Bnet::NextPassPatch(Control* box, BOOL(__stdcall* FunCallBack)(Control*, DWORD, DWORD)) {
+	wchar_t* wszLastPass = nullptr; // Ensure it's initialized to nullptr
+
+	if (Bnet::lastPass.size() > 0) {
+		// Type in the password from last game if available
+		wszLastPass = AnsiToUnicode(Bnet::lastPass.c_str());
+	}
+	else {
+		// TBD Input the default password, but only if the lastGame is null, otherwise we might be inserting an undesired password
+		if (Bnet::lastName.size() > 0) {
+			return;
+		}
+		wszLastPass = AnsiToUnicode(Bnet::GetDefaultPassword().c_str());
+	}
+
 	D2WIN_SetControlText(box, wszLastPass);
-	
+
 	// original code
 	D2WIN_SetEditBoxProc(box, FunCallBack);
 	delete[] wszLastPass;
 }
 
-VOID __fastcall Bnet::GameDescPatch(Control* box, BOOL(__stdcall *FunCallBack)(Control*, DWORD, DWORD)) {
-	if (Bnet::lastDesc.size() == 0)
-		return;
-	wchar_t *wszLastDesc = AnsiToUnicode(Bnet::lastDesc.c_str());
-	
+VOID __fastcall Bnet::GameDescPatch(Control* box, BOOL(__stdcall* FunCallBack)(Control*, DWORD, DWORD)) {
+	wchar_t* wszLastDesc = nullptr; // Ensure it's initialized to nullptr
+
+	if (Bnet::lastDesc.size() > 0) {
+		// Type in the gs (description) from last game if available
+		wszLastDesc = AnsiToUnicode(Bnet::lastDesc.c_str());
+	}
+	else {
+		wszLastDesc = AnsiToUnicode(Bnet::defaultGsString.c_str());
+	}
+
 	D2WIN_SetControlText(box, wszLastDesc);
-	
+
 	// original code
 	D2WIN_SetEditBoxProc(box, FunCallBack);
 	delete[] wszLastDesc;
@@ -192,7 +228,7 @@ VOID __fastcall Bnet::GameDescPatch(Control* box, BOOL(__stdcall *FunCallBack)(C
 void __declspec(naked) RemovePass_Interception() {
 	__asm {
 		PUSHAD
-		CALL [Bnet::RemovePassPatch]
+		CALL[Bnet::RemovePassPatch]
 		POPAD
 
 		; Original code
@@ -209,7 +245,7 @@ void Bnet::RemovePassPatch() {
 		return;
 	}
 
-	wchar_t *wszLastPass = AnsiToUnicode("");
+	wchar_t* wszLastPass = AnsiToUnicode("");
 	D2WIN_SetControlText(box, wszLastPass);
 	delete[] wszLastPass;
 }
