@@ -50,6 +50,7 @@ struct UnitItemInfo {
 	UnitAny *item;
 	char itemCode[4];
 	ItemAttributes *attrs;
+	int score = 1;
 };
 
 // Item data obtained from an incoming 0x9c packet
@@ -117,6 +118,7 @@ struct ItemInfo {
 	std::vector<unsigned long> prefixes;
 	std::vector<unsigned long> suffixes;
 	std::vector<ItemProperty> properties;
+	int score = 1;
 	bool operator<(ItemInfo const & other) const;
 };
 
@@ -248,6 +250,27 @@ public:
 	PlayerTypeCondition(unsigned int m) : mode(m) { conditionType = CT_Operand; };
 private:
 	unsigned int mode;
+	bool EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2);
+	bool EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2);
+};
+
+class ScoreCondition : public Condition {
+public:
+	ScoreCondition(BYTE op, int value) : operation(op), score(value) { conditionType = CT_Operand; };
+private:
+	BYTE operation;
+	int score;
+	bool EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2);
+	bool EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2);
+};
+
+
+class AddScoreCondition : public Condition {
+public:
+	AddScoreCondition(BYTE op, int value) : termOrFactor(op), score(value) { conditionType = CT_Operand; };
+private:
+	BYTE termOrFactor;
+	int score;
 	bool EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2);
 	bool EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2);
 };

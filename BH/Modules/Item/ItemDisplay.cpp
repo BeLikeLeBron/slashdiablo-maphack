@@ -57,6 +57,10 @@ enum Operation {
 	EQUAL,
 	GREATER_THAN,
 	LESS_THAN,
+	ADDITION,
+	SUBTRACTION,
+	DIVIDE,
+	MULTIPLY,
 	NONE
 };
 
@@ -274,7 +278,7 @@ void GetItemName(UnitItemInfo *uInfo, string &name) {
 }
 
 void SubstituteNameVariables(UnitItemInfo *uInfo, string &name, const string &action_name) {
-	char origName[128], sockets[4], code[4], ilvl[4], alvl[4], craft_alvl[4], runename[16] = "", runenum[4] = "0";
+	char origName[128], sockets[4], code[4], ilvl[4], alvl[4], craft_alvl[4], runename[16] = "", runenum[4] = "0", score[12];
 	char gemtype[16] = "", gemlevel[16] = "", sellValue[16] = "", statVal[16] = "";
 	char lvlreq[4], wpnspd[4], rangeadder[4];
 
@@ -311,6 +315,8 @@ void SubstituteNameVariables(UnitItemInfo *uInfo, string &name, const string &ac
 		sprintf_s(gemtype, "%s", GetGemTypeString(GetGemType(uInfo->attrs)));
 	}
 
+	sprintf_s(score, "%d", uInfo->score);
+
 	string baseName = UnicodeToAnsi(D2LANG_GetLocaleText(txt->nLocaleTxtNo));
 
 	ActionReplace replacements[] = {
@@ -330,6 +336,7 @@ void SubstituteNameVariables(UnitItemInfo *uInfo, string &name, const string &ac
 		{"CODE", code},
 		{"NL", "\n"},
 		{"PRICE", sellValue},
+		{"SCORE", score},
 		COLOR_REPLACEMENTS
 	};
 	name.assign(action_name);
@@ -433,6 +440,25 @@ BYTE GetOperation(string *op) {
 		return LESS_THAN;
 	} else if ((*op)[0] == '>') {
 		return GREATER_THAN;
+	}
+	return NONE;
+}
+
+BYTE GetTermOrFactor(string* op) {
+	if (op->length() < 1) {
+		return NONE;
+	}
+	else if ((*op)[0] == '-') {
+		return SUBTRACTION;
+	}
+	else if ((*op)[0] == '+') {
+		return ADDITION;
+	}
+	else if ((*op)[0] == '*') {
+		return MULTIPLY;
+	}
+	else if ((*op)[0] == '/') {
+		return DIVIDE;
 	}
 	return NONE;
 }
@@ -694,7 +720,7 @@ int ParsePingLevel(Action *act, const string& key_string) {
 	return ping_level;
 }
 
-const string Condition::tokenDelims = "<=>";
+const string Condition::tokenDelims = "<=>+-*/";
 
 // Implements the shunting-yard algorithm to evaluate condition expressions
 // Returns a vector of conditions in Reverse Polish Notation
@@ -845,6 +871,7 @@ void Condition::BuildConditions(vector<Condition*> &conditions, string token) {
 	}
 	//if (key.compare(0, 5, "COUNT") == 0) PrintText(1, "Matched COUNT, valueStr=%s, value=%d, delim=%s", valueStr.c_str(), value, delim.c_str());
 	BYTE operation = GetOperation(&delim);
+	BYTE termOrFactor = GetTermOrFactor(&delim);
 
 	unsigned int keylen = key.length();
 	if (key == "AND" || key == "&&") {
@@ -1183,7 +1210,13 @@ void Condition::BuildConditions(vector<Condition*> &conditions, string token) {
 	} else if (key == "XP") {
 		Condition::AddOperand(conditions, new PlayerTypeCondition(PLAYER_XP));
 	} else if (key == "CLASSIC") {
-	Condition::AddOperand(conditions, new PlayerTypeCondition(PLAYER_CLASSIC));
+		Condition::AddOperand(conditions, new PlayerTypeCondition(PLAYER_CLASSIC));
+	} else if (key.compare(0, 5, "SCORE") == 0) {
+		if (operation != NONE) {
+			Condition::AddOperand(conditions, new ScoreCondition(operation, value));
+		} else if (termOrFactor != NONE) {
+			Condition::AddOperand(conditions, new AddScoreCondition(operation, value));
+		}
 	} else if (key.compare(0, 5, "COUNT") == 0) {
 		// backup the last condition type
 		//PrintText(1, "COUNT match with valueStr=%s", valueStr.c_str());
@@ -1343,6 +1376,37 @@ bool PlayerTypeCondition::EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1,
 }
 bool PlayerTypeCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2) {
 	return (((*p_D2LAUNCH_BnData)->nCharFlags >> 5) & 0x1) == mode;
+}
+
+bool ScoreCondition::EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2) {
+	return IntegerCompare(uInfo->score, operation, score);
+}
+bool ScoreCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2) {
+	return IntegerCompare(info->score, operation, score);
+}
+
+void HandleTermOrFactor(int& currentScore, BYTE termOrFactor, int score) {
+	if (termOrFactor == ADDITION) {
+		currentScore += score;
+	}
+	else if (termOrFactor == SUBTRACTION) {
+		currentScore -= score;
+	}
+	else if (termOrFactor == MULTIPLY) {
+		currentScore *= score;
+	}
+	else if (termOrFactor == DIVIDE) {
+		currentScore /= score;
+	}
+}
+
+bool AddScoreCondition::EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2) {
+	HandleTermOrFactor(uInfo->score, termOrFactor, score);
+	return true;
+}
+bool AddScoreCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2) {
+	HandleTermOrFactor(info->score, termOrFactor, score);
+	return true;
 }
 
 bool QualityCondition::EvaluateInternal(UnitItemInfo *uInfo, Condition *arg1, Condition *arg2) {
