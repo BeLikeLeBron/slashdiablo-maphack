@@ -5,14 +5,13 @@ on: workflow_dispatch
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
       with:
         msbuild-architecture: x86
-        vs-version: '[16.4,16.5)'
     - uses: actions/checkout@master
     - name: MSBuild
       run: msbuild /t:BH:Rebuild /p:Configuration=Release /p:SHA=${GITHUB_SHA::7} BH.sln
