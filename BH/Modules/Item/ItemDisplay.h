@@ -118,7 +118,6 @@ struct ItemInfo {
 	std::vector<unsigned long> prefixes;
 	std::vector<unsigned long> suffixes;
 	std::vector<ItemProperty> properties;
-	int score = 1;
 	bool operator<(ItemInfo const & other) const;
 };
 
@@ -259,17 +258,6 @@ public:
 	ScoreCondition(BYTE op, int value) : operation(op), score(value) { conditionType = CT_Operand; };
 private:
 	BYTE operation;
-	int score;
-	bool EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2);
-	bool EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2);
-};
-
-
-class AddScoreCondition : public Condition {
-public:
-	AddScoreCondition(BYTE op, int value) : termOrFactor(op), score(value) { conditionType = CT_Operand; };
-private:
-	BYTE termOrFactor;
 	int score;
 	bool EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2);
 	bool EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2);
@@ -625,6 +613,8 @@ struct Action {
 	int notifyColor;
 	bool noTracking;
 	unsigned int pingLevel;
+	int scoreOp = 0;
+	int score = 0;
 	Action() :
 		colorOnMap(UNDEFINED_COLOR),
 		borderColor(UNDEFINED_COLOR),
@@ -636,7 +626,8 @@ struct Action {
 		stopProcessing(true),
 		noTracking(false),
 		name(""),
-		description("") {}
+		description(""),
+		score(0){}
 };
 
 struct Rule {
@@ -696,6 +687,14 @@ struct Rule {
 		}
 		return retval;
 	}
+};
+
+class ItemScoreLookupCache : public RuleLookupCache<int> {
+	int make_cached_T(UnitItemInfo* uInfo) override;
+
+public:
+	ItemScoreLookupCache(const std::vector<Rule*>& RuleList) :
+		RuleLookupCache<int>(RuleList) {}
 };
 
 class ItemDescLookupCache : public RuleLookupCache<string> {
@@ -758,6 +757,7 @@ void BuildAction(string *str, Action *act);
 string ParseDescription(Action *act);
 int ParsePingLevel(Action *act, const string& reg_string);
 int ParseMapColor(Action *act, const string& reg_string);
+int ParseScore(Action* act, const string& key_string);
 void HandleUnknownItemCode(char *code, char *tag);
 BYTE GetOperation(string *op);
 inline bool IntegerCompare(unsigned int Lvalue, int operation, unsigned int Rvalue);

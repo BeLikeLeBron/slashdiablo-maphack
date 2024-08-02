@@ -75,6 +75,7 @@ vector<Rule*> RuleList;
 vector<Rule*> NameRuleList;
 vector<Rule*> DescRuleList;
 vector<Rule*> MapRuleList;
+vector<Rule*> ScoreRuleList;
 vector<Rule*> DoNotBlockRuleList;
 vector<Rule*> IgnoreRuleList;
 BYTE LastConditionType;
@@ -165,6 +166,34 @@ bool IsRune(ItemAttributes *attrs) {
 
 BYTE RuneNumberFromItemCode(char *code){
 	return (BYTE)(((code[1] - '0') * 10) + code[2] - '0');
+}
+
+void HandleTermOrFactor(int& currentScore, BYTE termOrFactor, int score) {
+	if (termOrFactor == ADDITION) {
+		currentScore += score;
+	}
+	else if (termOrFactor == SUBTRACTION) {
+		currentScore -= score;
+	}
+	else if (termOrFactor == MULTIPLY) {
+		currentScore *= score;
+	}
+	else if (termOrFactor == DIVIDE) {
+		currentScore /= score;
+	}
+}
+
+int ItemScoreLookupCache::make_cached_T(UnitItemInfo* uInfo) {
+	int score = 1;
+	for (vector<Rule*>::const_iterator it = this->RuleList.begin(); it != this->RuleList.end(); it++) {
+		if ((*it)->Evaluate(uInfo, NULL)) {
+			HandleTermOrFactor(score, (*it)->action.scoreOp, (*it)->action.score);
+			if ((*it)->action.stopProcessing) {
+				break;
+			}
+		}
+	}
+	return score;
 }
 
 // Find the item description. This code is called only when there's a cache miss
@@ -268,6 +297,7 @@ string IgnoreLookupCache::to_str(const bool &ignore) {
 // least recently used cache for storing a limited number of item names
 ItemDescLookupCache item_desc_cache(DescRuleList);
 ItemNameLookupCache item_name_cache(NameRuleList);
+ItemScoreLookupCache item_score_cache(ScoreRuleList);
 MapActionLookupCache map_action_cache(MapRuleList);
 IgnoreLookupCache do_not_block_cache(DoNotBlockRuleList);
 IgnoreLookupCache ignore_cache(IgnoreRuleList);
@@ -315,7 +345,7 @@ void SubstituteNameVariables(UnitItemInfo *uInfo, string &name, const string &ac
 		sprintf_s(gemtype, "%s", GetGemTypeString(GetGemType(uInfo->attrs)));
 	}
 
-	sprintf_s(score, "%d", uInfo->score);
+	sprintf_s(score, "%d", item_score_cache.Get(uInfo));
 
 	string baseName = UnicodeToAnsi(D2LANG_GetLocaleText(txt->nLocaleTxtNo));
 
@@ -583,6 +613,9 @@ namespace ItemDisplay {
 			if (!has_map_action && !has_name && !has_desc && r->action.stopProcessing) {
 				IgnoreRuleList.push_back(r);
 			}
+			if (r->action.scoreOp != 0) {
+				ScoreRuleList.push_back(r);
+			}
 		}
 		cout << "Finished initializing item rules" << endl << endl;
 	}
@@ -604,6 +637,7 @@ namespace ItemDisplay {
 		NameRuleList.clear();
 		DescRuleList.clear();
 		MapRuleList.clear();
+		ScoreRuleList.clear();
 		DoNotBlockRuleList.clear();
 		IgnoreRuleList.clear();
 	}
@@ -641,6 +675,7 @@ void BuildAction(string *str, Action *act) {
 	act->pxColor = ParseMapColor(act, "PX");
 	act->lineColor = ParseMapColor(act, "LINE");
 	act->notifyColor = ParseMapColor(act, "NOTIFY");
+	ParseScore(act, "SCORE");
 	act->pingLevel = ParsePingLevel(act, "TIER");
 	act->description = ParseDescription(act);
 
@@ -705,6 +740,22 @@ int ParseMapColor(Action *act, const string& key_string) {
 	return color;
 }
 
+int ParseScore(Action* act, const string& key_string) {
+	std::regex pattern("%" + key_string + "([+-/\\*])([0-9]+)%",
+		std::regex_constants::ECMAScript | std::regex_constants::icase);
+	std::smatch the_match;
+	int score = act->score;
+
+	if (std::regex_search(act->name, the_match, pattern)) {
+		act->scoreOp = GetTermOrFactor(&the_match[1].str());
+		act->score = stoi(the_match[2].str());
+		act->name.replace(
+			the_match.prefix().length(),
+			the_match[0].length(), "");
+	}
+	return score;
+}
+
 int ParsePingLevel(Action *act, const string& key_string) {
 	std::regex pattern("%" + key_string + "-([0-9])%",
 		std::regex_constants::ECMAScript | std::regex_constants::icase);
@@ -720,7 +771,7 @@ int ParsePingLevel(Action *act, const string& key_string) {
 	return ping_level;
 }
 
-const string Condition::tokenDelims = "<=>+-*/";
+const string Condition::tokenDelims = "<=>";
 
 // Implements the shunting-yard algorithm to evaluate condition expressions
 // Returns a vector of conditions in Reverse Polish Notation
@@ -871,7 +922,6 @@ void Condition::BuildConditions(vector<Condition*> &conditions, string token) {
 	}
 	//if (key.compare(0, 5, "COUNT") == 0) PrintText(1, "Matched COUNT, valueStr=%s, value=%d, delim=%s", valueStr.c_str(), value, delim.c_str());
 	BYTE operation = GetOperation(&delim);
-	BYTE termOrFactor = GetTermOrFactor(&delim);
 
 	unsigned int keylen = key.length();
 	if (key == "AND" || key == "&&") {
@@ -1212,11 +1262,7 @@ void Condition::BuildConditions(vector<Condition*> &conditions, string token) {
 	} else if (key == "CLASSIC") {
 		Condition::AddOperand(conditions, new PlayerTypeCondition(PLAYER_CLASSIC));
 	} else if (key.compare(0, 5, "SCORE") == 0) {
-		if (operation != NONE) {
-			Condition::AddOperand(conditions, new ScoreCondition(operation, value));
-		} else if (termOrFactor != NONE) {
-			Condition::AddOperand(conditions, new AddScoreCondition(operation, value));
-		}
+		Condition::AddOperand(conditions, new ScoreCondition(operation, value));
 	} else if (key.compare(0, 5, "COUNT") == 0) {
 		// backup the last condition type
 		//PrintText(1, "COUNT match with valueStr=%s", valueStr.c_str());
@@ -1379,33 +1425,10 @@ bool PlayerTypeCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* 
 }
 
 bool ScoreCondition::EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2) {
-	return IntegerCompare(uInfo->score, operation, score);
+	return IntegerCompare(item_score_cache.Get(uInfo), operation, score);
 }
 bool ScoreCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2) {
-	return IntegerCompare(info->score, operation, score);
-}
-
-void HandleTermOrFactor(int& currentScore, BYTE termOrFactor, int score) {
-	if (termOrFactor == ADDITION) {
-		currentScore += score;
-	}
-	else if (termOrFactor == SUBTRACTION) {
-		currentScore -= score;
-	}
-	else if (termOrFactor == MULTIPLY) {
-		currentScore *= score;
-	}
-	else if (termOrFactor == DIVIDE) {
-		currentScore /= score;
-	}
-}
-
-bool AddScoreCondition::EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2) {
-	HandleTermOrFactor(uInfo->score, termOrFactor, score);
-	return true;
-}
-bool AddScoreCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2) {
-	HandleTermOrFactor(info->score, termOrFactor, score);
+	// TODO: Implement later
 	return true;
 }
 
