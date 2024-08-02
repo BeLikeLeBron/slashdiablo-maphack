@@ -57,6 +57,10 @@ enum Operation {
 	EQUAL,
 	GREATER_THAN,
 	LESS_THAN,
+	ADDITION,
+	SUBTRACTION,
+	DIVIDE,
+	MULTIPLY,
 	NONE
 };
 
@@ -71,6 +75,7 @@ vector<Rule*> RuleList;
 vector<Rule*> NameRuleList;
 vector<Rule*> DescRuleList;
 vector<Rule*> MapRuleList;
+vector<Rule*> ScoreRuleList;
 vector<Rule*> DoNotBlockRuleList;
 vector<Rule*> IgnoreRuleList;
 BYTE LastConditionType;
@@ -161,6 +166,34 @@ bool IsRune(ItemAttributes *attrs) {
 
 BYTE RuneNumberFromItemCode(char *code){
 	return (BYTE)(((code[1] - '0') * 10) + code[2] - '0');
+}
+
+void HandleTermOrFactor(int& currentScore, BYTE termOrFactor, int score) {
+	if (termOrFactor == ADDITION) {
+		currentScore += score;
+	}
+	else if (termOrFactor == SUBTRACTION) {
+		currentScore -= score;
+	}
+	else if (termOrFactor == MULTIPLY) {
+		currentScore *= score;
+	}
+	else if (termOrFactor == DIVIDE) {
+		currentScore /= score;
+	}
+}
+
+int ItemScoreLookupCache::make_cached_T(UnitItemInfo* uInfo) {
+	int score = 1;
+	for (vector<Rule*>::const_iterator it = this->RuleList.begin(); it != this->RuleList.end(); it++) {
+		if ((*it)->Evaluate(uInfo, NULL)) {
+			HandleTermOrFactor(score, (*it)->action.scoreOp, (*it)->action.score);
+			if ((*it)->action.stopProcessing) {
+				break;
+			}
+		}
+	}
+	return score;
 }
 
 // Find the item description. This code is called only when there's a cache miss
@@ -264,6 +297,7 @@ string IgnoreLookupCache::to_str(const bool &ignore) {
 // least recently used cache for storing a limited number of item names
 ItemDescLookupCache item_desc_cache(DescRuleList);
 ItemNameLookupCache item_name_cache(NameRuleList);
+ItemScoreLookupCache item_score_cache(ScoreRuleList);
 MapActionLookupCache map_action_cache(MapRuleList);
 IgnoreLookupCache do_not_block_cache(DoNotBlockRuleList);
 IgnoreLookupCache ignore_cache(IgnoreRuleList);
@@ -274,7 +308,7 @@ void GetItemName(UnitItemInfo *uInfo, string &name) {
 }
 
 void SubstituteNameVariables(UnitItemInfo *uInfo, string &name, const string &action_name) {
-	char origName[128], sockets[4], code[4], ilvl[4], alvl[4], craft_alvl[4], runename[16] = "", runenum[4] = "0";
+	char origName[128], sockets[4], code[4], ilvl[4], alvl[4], craft_alvl[4], runename[16] = "", runenum[4] = "0", score[12];
 	char gemtype[16] = "", gemlevel[16] = "", sellValue[16] = "", statVal[16] = "";
 	char lvlreq[4], wpnspd[4], rangeadder[4];
 
@@ -311,6 +345,8 @@ void SubstituteNameVariables(UnitItemInfo *uInfo, string &name, const string &ac
 		sprintf_s(gemtype, "%s", GetGemTypeString(GetGemType(uInfo->attrs)));
 	}
 
+	sprintf_s(score, "%d", item_score_cache.Get(uInfo));
+
 	string baseName = UnicodeToAnsi(D2LANG_GetLocaleText(txt->nLocaleTxtNo));
 
 	ActionReplace replacements[] = {
@@ -330,6 +366,7 @@ void SubstituteNameVariables(UnitItemInfo *uInfo, string &name, const string &ac
 		{"CODE", code},
 		{"NL", "\n"},
 		{"PRICE", sellValue},
+		{"SCORE", score},
 		COLOR_REPLACEMENTS
 	};
 	name.assign(action_name);
@@ -433,6 +470,25 @@ BYTE GetOperation(string *op) {
 		return LESS_THAN;
 	} else if ((*op)[0] == '>') {
 		return GREATER_THAN;
+	}
+	return NONE;
+}
+
+BYTE GetTermOrFactor(string* op) {
+	if (op->length() < 1) {
+		return NONE;
+	}
+	else if ((*op)[0] == '-') {
+		return SUBTRACTION;
+	}
+	else if ((*op)[0] == '+') {
+		return ADDITION;
+	}
+	else if ((*op)[0] == '*') {
+		return MULTIPLY;
+	}
+	else if ((*op)[0] == '/') {
+		return DIVIDE;
 	}
 	return NONE;
 }
@@ -557,6 +613,9 @@ namespace ItemDisplay {
 			if (!has_map_action && !has_name && !has_desc && r->action.stopProcessing) {
 				IgnoreRuleList.push_back(r);
 			}
+			if (r->action.scoreOp != 0) {
+				ScoreRuleList.push_back(r);
+			}
 		}
 		cout << "Finished initializing item rules" << endl << endl;
 	}
@@ -578,6 +637,7 @@ namespace ItemDisplay {
 		NameRuleList.clear();
 		DescRuleList.clear();
 		MapRuleList.clear();
+		ScoreRuleList.clear();
 		DoNotBlockRuleList.clear();
 		IgnoreRuleList.clear();
 	}
@@ -615,6 +675,7 @@ void BuildAction(string *str, Action *act) {
 	act->pxColor = ParseMapColor(act, "PX");
 	act->lineColor = ParseMapColor(act, "LINE");
 	act->notifyColor = ParseMapColor(act, "NOTIFY");
+	ParseScore(act, "SCORE");
 	act->pingLevel = ParsePingLevel(act, "TIER");
 	act->description = ParseDescription(act);
 
@@ -677,6 +738,22 @@ int ParseMapColor(Action *act, const string& key_string) {
 				the_match[0].length(), "");
 	}
 	return color;
+}
+
+int ParseScore(Action* act, const string& key_string) {
+	std::regex pattern("%" + key_string + "([+-/\\*])([0-9]+)%",
+		std::regex_constants::ECMAScript | std::regex_constants::icase);
+	std::smatch the_match;
+	int score = act->score;
+
+	if (std::regex_search(act->name, the_match, pattern)) {
+		act->scoreOp = GetTermOrFactor(&the_match[1].str());
+		act->score = stoi(the_match[2].str());
+		act->name.replace(
+			the_match.prefix().length(),
+			the_match[0].length(), "");
+	}
+	return score;
 }
 
 int ParsePingLevel(Action *act, const string& key_string) {
@@ -1183,7 +1260,9 @@ void Condition::BuildConditions(vector<Condition*> &conditions, string token) {
 	} else if (key == "XP") {
 		Condition::AddOperand(conditions, new PlayerTypeCondition(PLAYER_XP));
 	} else if (key == "CLASSIC") {
-	Condition::AddOperand(conditions, new PlayerTypeCondition(PLAYER_CLASSIC));
+		Condition::AddOperand(conditions, new PlayerTypeCondition(PLAYER_CLASSIC));
+	} else if (key.compare(0, 5, "SCORE") == 0) {
+		Condition::AddOperand(conditions, new ScoreCondition(operation, value));
 	} else if (key.compare(0, 5, "COUNT") == 0) {
 		// backup the last condition type
 		//PrintText(1, "COUNT match with valueStr=%s", valueStr.c_str());
@@ -1343,6 +1422,14 @@ bool PlayerTypeCondition::EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1,
 }
 bool PlayerTypeCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2) {
 	return (((*p_D2LAUNCH_BnData)->nCharFlags >> 5) & 0x1) == mode;
+}
+
+bool ScoreCondition::EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2) {
+	return IntegerCompare(item_score_cache.Get(uInfo), operation, score);
+}
+bool ScoreCondition::EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2) {
+	// TODO: Implement later
+	return true;
 }
 
 bool QualityCondition::EvaluateInternal(UnitItemInfo *uInfo, Condition *arg1, Condition *arg2) {

@@ -50,6 +50,7 @@ struct UnitItemInfo {
 	UnitAny *item;
 	char itemCode[4];
 	ItemAttributes *attrs;
+	int score = 1;
 };
 
 // Item data obtained from an incoming 0x9c packet
@@ -248,6 +249,16 @@ public:
 	PlayerTypeCondition(unsigned int m) : mode(m) { conditionType = CT_Operand; };
 private:
 	unsigned int mode;
+	bool EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2);
+	bool EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2);
+};
+
+class ScoreCondition : public Condition {
+public:
+	ScoreCondition(BYTE op, int value) : operation(op), score(value) { conditionType = CT_Operand; };
+private:
+	BYTE operation;
+	int score;
 	bool EvaluateInternal(UnitItemInfo* uInfo, Condition* arg1, Condition* arg2);
 	bool EvaluateInternalFromPacket(ItemInfo* info, Condition* arg1, Condition* arg2);
 };
@@ -602,6 +613,8 @@ struct Action {
 	int notifyColor;
 	bool noTracking;
 	unsigned int pingLevel;
+	int scoreOp = 0;
+	int score = 0;
 	Action() :
 		colorOnMap(UNDEFINED_COLOR),
 		borderColor(UNDEFINED_COLOR),
@@ -613,7 +626,8 @@ struct Action {
 		stopProcessing(true),
 		noTracking(false),
 		name(""),
-		description("") {}
+		description(""),
+		score(0){}
 };
 
 struct Rule {
@@ -673,6 +687,14 @@ struct Rule {
 		}
 		return retval;
 	}
+};
+
+class ItemScoreLookupCache : public RuleLookupCache<int> {
+	int make_cached_T(UnitItemInfo* uInfo) override;
+
+public:
+	ItemScoreLookupCache(const std::vector<Rule*>& RuleList) :
+		RuleLookupCache<int>(RuleList) {}
 };
 
 class ItemDescLookupCache : public RuleLookupCache<string> {
@@ -735,6 +757,7 @@ void BuildAction(string *str, Action *act);
 string ParseDescription(Action *act);
 int ParsePingLevel(Action *act, const string& reg_string);
 int ParseMapColor(Action *act, const string& reg_string);
+int ParseScore(Action* act, const string& key_string);
 void HandleUnknownItemCode(char *code, char *tag);
 BYTE GetOperation(string *op);
 inline bool IntegerCompare(unsigned int Lvalue, int operation, unsigned int Rvalue);

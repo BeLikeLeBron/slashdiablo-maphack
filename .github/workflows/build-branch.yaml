@@ -5,14 +5,16 @@ on: workflow_dispatch
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
     - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v2
+      with:
+        msbuild-architecture: x86
     - uses: actions/checkout@master
     - name: MSBuild
-      run: msbuild /t:BH:Rebuild /p:Configuration=Release /p:CustomDefinitions=`"SHA=\`"($env:GITHUB_SHA.substring(0,7))\`"`" BH.sln
+      run: msbuild /t:BH:Rebuild /p:Configuration=Release /p:SHA=${GITHUB_SHA::7} BH.sln
     - uses: actions/upload-artifact@v2
       with:
         name: BH.dll
